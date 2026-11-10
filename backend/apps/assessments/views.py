@@ -8,7 +8,7 @@ from .serializers import (
     AssessmentSubmitSerializer,
     AssessmentAttemptDetailSerializer
 )
-from .code_sandbox import execute_python_code
+from .code_sandbox import execute_code
 from notifications.models import Notification
 from accounts.permissions import IsCandidate
 
@@ -49,7 +49,7 @@ class AssessmentTakeView(views.APIView):
 class AssessmentRunCodeView(views.APIView):
     """
     Live Code Execution Endpoint:
-    Executes candidate code in an isolated Python sandbox against test cases.
+    Executes candidate code in an isolated sandbox (Python, JavaScript, SQL) against test cases.
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -58,19 +58,23 @@ class AssessmentRunCodeView(views.APIView):
         question_id = request.data.get('question_id')
         test_cases = request.data.get('test_cases', [])
         function_name = request.data.get('function_name', 'solution')
+        language = request.data.get('language', 'python')
 
         if question_id:
             try:
                 question = Question.objects.get(id=question_id)
-                test_cases = question.test_cases or test_cases
+                # Use sample_test_cases if available, fallback to full test_cases
+                test_cases = question.sample_test_cases or question.test_cases or test_cases
                 function_name = question.function_name or function_name
+                language = question.language or language
             except Question.DoesNotExist:
                 pass
 
         if not user_code or not user_code.strip():
             return Response({"error": "No code provided to execute."}, status=status.HTTP_400_BAD_REQUEST)
 
-        execution_result = execute_python_code(
+        execution_result = execute_code(
+            language=language,
             user_code=user_code,
             test_cases=test_cases,
             function_name=function_name
@@ -80,7 +84,8 @@ class AssessmentRunCodeView(views.APIView):
 
 class AssessmentSubmitView(views.APIView):
     """
-    Evaluates both MCQs and Code Challenges with genuine sandbox execution.
+    Evaluates both MCQs (50 pts max) and Code Challenges (50 pts max) with genuine sandbox execution.
+    Calculates final score out of 100 with detailed breakdown.
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -98,31 +103,56 @@ class AssessmentSubmitView(views.APIView):
         except Assessment.DoesNotExist:
             return Response({"error": "Assessment not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        questions = assessment.questions.all()
+        questions = assessment.questions.all().order_by('order', 'id')
         total_questions = questions.count()
         if total_questions == 0:
             return Response({"error": "No questions configured for this assessment."}, status=status.HTTP_400_BAD_REQUEST)
 
-        correct_count = 0
+        mcq_questions = [q for q in questions if q.question_type == Question.QuestionType.MCQ]
+        code_questions = [q for q in questions if q.question_type == Question.QuestionType.CODE]
+
+        total_mcqs = len(mcq_questions)
+        total_coding = len(code_questions)
+
+        mcq_earned = 0.0
+        coding_earned = 0.0
+        correct_mcqs = 0
+        correct_coding = 0
         responses_to_create = []
+
+        # Standard 10 marks per question
+        POINTS_PER_QUESTION = 10.0
 
         for q in questions:
             q_id_str = str(q.id)
             if q.question_type == Question.QuestionType.CODE:
-                # Real code execution against test cases
+                # Real code execution against evaluation test cases
                 user_code = code_answers.get(q_id_str, '').strip()
                 test_res = {}
                 is_correct = False
-                if user_code and q.test_cases:
-                    test_res = execute_python_code(
+                eval_tests = q.test_cases or q.sample_test_cases or []
+
+                if user_code and eval_tests:
+                    test_res = execute_code(
+                        language=q.language or 'python',
                         user_code=user_code,
-                        test_cases=q.test_cases,
-                        function_name=q.function_name
+                        test_cases=eval_tests,
+                        function_name=q.function_name or 'solution'
                     )
                     is_correct = test_res.get('all_passed', False)
 
+                    # Compute score based on test cases passed
+                    t_list = test_res.get('tests', [])
+                    if t_list:
+                        passed_t = sum(1 for t in t_list if t.get('passed', False))
+                        coding_earned += (passed_t / len(t_list)) * POINTS_PER_QUESTION
+                    elif is_correct:
+                        coding_earned += POINTS_PER_QUESTION
+                elif is_correct:
+                    coding_earned += POINTS_PER_QUESTION
+
                 if is_correct:
-                    correct_count += 1
+                    correct_coding += 1
 
                 responses_to_create.append({
                     "question": q,
@@ -140,7 +170,8 @@ class AssessmentSubmitView(views.APIView):
                     is_correct = (int(user_choice) == q.correct_option_index)
 
                 if is_correct:
-                    correct_count += 1
+                    correct_mcqs += 1
+                    mcq_earned += POINTS_PER_QUESTION
 
                 responses_to_create.append({
                     "question": q,
@@ -150,17 +181,24 @@ class AssessmentSubmitView(views.APIView):
                     "is_correct": is_correct
                 })
 
-        percentage = int((correct_count / total_questions) * 100)
+        total_correct = correct_mcqs + correct_coding
+        final_score = int(round(mcq_earned + coding_earned))
+        max_possible = max(10, total_questions * 10)
+        percentage = min(100, int(round((final_score / max_possible) * 100)))
         passed = (percentage >= assessment.passing_score)
 
         attempt = AssessmentAttempt.objects.create(
             candidate=request.user,
             assessment=assessment,
-            score=correct_count,
+            score=final_score,
             percentage=percentage,
             passed=passed,
             total_questions=total_questions,
-            correct_answers=correct_count
+            correct_answers=total_correct,
+            mcq_score=int(round(mcq_earned)),
+            coding_score=int(round(coding_earned)),
+            total_mcqs=total_mcqs,
+            total_coding=total_coding
         )
 
         for item in responses_to_create:
@@ -173,12 +211,12 @@ class AssessmentSubmitView(views.APIView):
                 is_correct=item['is_correct']
             )
 
-        # Send in-app notification
+        # In-app notification
         status_text = "Passed" if passed else "Completed"
         Notification.objects.create(
             recipient=request.user,
             title=f"Assessment Result: {assessment.title}",
-            message=f"You scored {percentage}% ({status_text}) on '{assessment.title}'.",
+            message=f"You scored {percentage}/100 ({status_text}) on '{assessment.title}'. MCQs: {correct_mcqs}/{total_mcqs}, Coding: {correct_coding}/{total_coding} passed.",
             notification_type=Notification.NotificationType.ASSESSMENT_RESULT,
             link=f"/assessments/results/{attempt.id}"
         )

@@ -52,11 +52,19 @@ class Question(models.Model):
 
     assessment = models.ForeignKey(Assessment, on_delete=models.CASCADE, related_name='questions')
     question_type = models.CharField(max_length=20, choices=QuestionType.choices, default=QuestionType.MCQ)
+    title = models.CharField(max_length=255, blank=True, default='')
+    difficulty = models.CharField(max_length=20, default='Easy')
     question_text = models.TextField()
+    input_format = models.TextField(blank=True, default='')
+    output_format = models.TextField(blank=True, default='')
+    constraints = models.TextField(blank=True, default='')
+    examples = models.JSONField(default=list, blank=True)
+    language = models.CharField(max_length=50, default='python')
     options = models.JSONField(default=list, blank=True)  # list of strings: ["Option A", "Option B", ...]
     correct_option_index = models.PositiveSmallIntegerField(default=0)  # for MCQ
     starter_code = models.TextField(blank=True, default='')  # for Code challenges
-    test_cases = models.JSONField(default=list, blank=True)  # list of dicts: [{"inputs": [...], "expected": ...}]
+    sample_test_cases = models.JSONField(default=list, blank=True)  # visible sample tests: [{"inputs": [...], "expected": ...}]
+    test_cases = models.JSONField(default=list, blank=True)  # full evaluation tests: [{"inputs": [...], "expected": ...}]
     function_name = models.CharField(max_length=100, default='solution')
     explanation = models.TextField(blank=True)
     order = models.PositiveIntegerField(default=1)
@@ -65,7 +73,8 @@ class Question(models.Model):
         ordering = ['order', 'id']
 
     def __str__(self):
-        return f"Q{self.order} [{self.question_type}]: {self.question_text[:50]}..."
+        prefix = self.title if self.title else self.question_text[:40]
+        return f"Q{self.order} [{self.question_type} - {self.difficulty}]: {prefix}"
 
 class AssessmentAttempt(models.Model):
     candidate = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='assessment_attempts')
@@ -73,8 +82,12 @@ class AssessmentAttempt(models.Model):
     score = models.PositiveIntegerField(default=0)
     percentage = models.PositiveIntegerField(default=0)
     passed = models.BooleanField(default=False)
-    total_questions = models.PositiveIntegerField(default=0)
+    total_questions = models.PositiveIntegerField(default=10)
     correct_answers = models.PositiveIntegerField(default=0)
+    mcq_score = models.PositiveIntegerField(default=0)
+    coding_score = models.PositiveIntegerField(default=0)
+    total_mcqs = models.PositiveIntegerField(default=5)
+    total_coding = models.PositiveIntegerField(default=5)
     completed_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

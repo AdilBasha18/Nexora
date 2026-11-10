@@ -39,8 +39,10 @@ class QuestionPublicSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = [
-            'id', 'question_text', 'question_type', 'options', 'order',
-            'starter_code', 'test_cases', 'function_name'
+            'id', 'title', 'difficulty', 'question_text', 'question_type',
+            'input_format', 'output_format', 'constraints', 'examples',
+            'language', 'options', 'order', 'starter_code',
+            'sample_test_cases', 'function_name'
         ]
 
 class AssessmentTakeSerializer(serializers.ModelSerializer):
@@ -64,8 +66,10 @@ class QuestionDetailResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = [
-            'id', 'question_text', 'question_type', 'options', 
-            'correct_option_index', 'explanation', 'starter_code', 'test_cases'
+            'id', 'title', 'difficulty', 'question_text', 'question_type',
+            'input_format', 'output_format', 'constraints', 'examples',
+            'language', 'options', 'correct_option_index', 'explanation',
+            'starter_code', 'sample_test_cases', 'test_cases', 'function_name'
         ]
 
 class AssessmentResponseDetailSerializer(serializers.ModelSerializer):
@@ -86,5 +90,6 @@ class AssessmentAttemptDetailSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'assessment', 'assessment_title', 'category_name', 'passing_score',
             'score', 'percentage', 'passed', 'total_questions', 'correct_answers',
+            'mcq_score', 'coding_score', 'total_mcqs', 'total_coding',
             'completed_at', 'responses'
         ]

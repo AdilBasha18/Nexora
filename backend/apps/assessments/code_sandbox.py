@@ -1,7 +1,9 @@
 """
-Secure Code Execution Sandbox for Python Coding Challenges.
-Executes candidate code in an isolated subprocess with strict timeout,
-resource limits, and automated unit test case assertions.
+Secure Multi-Language Code Execution Sandbox for Nexora Assessments.
+Supports:
+1. Python (isolated subprocess with python -I, dynamic UUID marker, timeout)
+2. JavaScript (isolated subprocess with node.exe, dynamic UUID marker, timeout)
+3. SQL (isolated in-memory SQLite sandbox with schema initialization and read-only query assertion)
 """
 
 import sys
@@ -11,10 +13,15 @@ import time
 import os
 import json
 import uuid
+import re
+import sqlite3
 
 EXECUTION_TIMEOUT_SECONDS = 3.5
 
-TEST_WRAPPER_TEMPLATE = '''
+# ---------------------------------------------------------------------------
+# Python Sandbox Template
+# ---------------------------------------------------------------------------
+PYTHON_WRAPPER_TEMPLATE = '''
 import sys, json
 
 # Candidate Code
@@ -75,6 +82,80 @@ print(marker + json.dumps({
 }))
 '''
 
+# ---------------------------------------------------------------------------
+# JavaScript Sandbox Template
+# ---------------------------------------------------------------------------
+JS_WRAPPER_TEMPLATE = '''
+const marker = "__MARKER_PLACEHOLDER__";
+const testCases = __TEST_CASES_PLACEHOLDER__;
+let allPassed = true;
+const results = [];
+
+// Candidate Code
+__USER_CODE_PLACEHOLDER__
+
+for (let idx = 0; idx < testCases.length; idx++) {
+    const tc = testCases[idx];
+    const inp = tc.input_args || [];
+    const expected = tc.expected_output;
+    const fnName = tc.function_name || 'solution';
+
+    try {
+        let fn;
+        try {
+            fn = eval(fnName);
+        } catch (e) {
+            fn = undefined;
+        }
+
+        if (typeof fn !== 'function') {
+            results.push({
+                test_index: idx + 1,
+                input: inp,
+                passed: false,
+                error: `Function '${fnName}' is not defined.`,
+                actual: null,
+                expected: expected
+            });
+            allPassed = false;
+            continue;
+        }
+
+        const argsClone = JSON.parse(JSON.stringify(inp));
+        const actual = fn(...argsClone);
+
+        const isMatch = (actual === expected) || (JSON.stringify(actual) === JSON.stringify(expected));
+        if (!isMatch) {
+            allPassed = false;
+        }
+
+        results.push({
+            test_index: idx + 1,
+            input: inp,
+            passed: Boolean(isMatch),
+            actual: actual !== undefined ? actual : null,
+            expected: expected,
+            error: null
+        });
+    } catch (err) {
+        allPassed = false;
+        results.push({
+            test_index: idx + 1,
+            input: inp,
+            passed: false,
+            actual: null,
+            expected: expected,
+            error: (err && err.message) ? err.message : String(err)
+        });
+    }
+}
+
+console.log(marker + JSON.stringify({
+    all_passed: allPassed,
+    tests: results
+}));
+'''
+
 def execute_python_code(user_code: str, test_cases: list, function_name: str = "solution") -> dict:
     """
     Executes Python user code against structured test cases.
@@ -86,10 +167,11 @@ def execute_python_code(user_code: str, test_cases: list, function_name: str = "
             "error": "No code provided.",
             "tests": [],
             "test_results": [],
-            "all_passed": False
+            "all_passed": False,
+            "elapsed_ms": 0
         }
 
-    # Static security blacklist for dangerous OS/runtime operations
+    # Static security blacklist
     hazard_patterns = [
         "import os", "from os", "import subprocess", "from subprocess",
         "import sys", "import shutil", "shutil.", "open(", "eval(", "exec(",
@@ -102,7 +184,8 @@ def execute_python_code(user_code: str, test_cases: list, function_name: str = "
                 "error": f"Security restriction: '{hazard}' is not permitted in sandbox evaluations.",
                 "tests": [],
                 "test_results": [],
-                "all_passed": False
+                "all_passed": False,
+                "elapsed_ms": 0
             }
 
     formatted_tcs = []
@@ -113,11 +196,10 @@ def execute_python_code(user_code: str, test_cases: list, function_name: str = "
             "expected_output": tc.get("expected")
         })
 
-    # Unpredictable runtime output marker prevents user code from forging results
     marker = f"<<<NX_RESULT_{uuid.uuid4().hex}>>>"
 
     wrapper_script = (
-        TEST_WRAPPER_TEMPLATE
+        PYTHON_WRAPPER_TEMPLATE
         .replace("__USER_CODE_PLACEHOLDER__", user_code)
         .replace("__TEST_CASES_PLACEHOLDER__", json.dumps(formatted_tcs))
         .replace("__MARKER_PLACEHOLDER__", marker)
@@ -151,7 +233,7 @@ def execute_python_code(user_code: str, test_cases: list, function_name: str = "
                 "success": True,
                 "all_passed": res_json.get("all_passed", False),
                 "tests": tests_list,
-                "test_results": tests_list,  # Support both naming conventions
+                "test_results": tests_list,
                 "output": logs,
                 "logs": logs,
                 "elapsed_ms": elapsed_ms,
@@ -204,3 +286,301 @@ def execute_python_code(user_code: str, test_cases: list, function_name: str = "
                 os.remove(temp_path)
         except Exception:
             pass
+
+def execute_javascript_code(user_code: str, test_cases: list, function_name: str = "solution") -> dict:
+    """
+    Executes JavaScript code in a Node.js isolated environment against test cases.
+    """
+    if not user_code or not user_code.strip():
+        return {
+            "success": False,
+            "error": "No code provided.",
+            "tests": [],
+            "test_results": [],
+            "all_passed": False,
+            "elapsed_ms": 0
+        }
+
+    # Static JS blacklist
+    js_hazards = [
+        "child_process", "require('fs')", "require(\"fs\")", "process.exit",
+        "process.env", "require('http')", "require('net')", "require('os')",
+        "require('cluster')", "global.process"
+    ]
+    for hazard in js_hazards:
+        if hazard in user_code:
+            return {
+                "success": False,
+                "error": f"Security restriction: '{hazard}' is not permitted in sandbox evaluations.",
+                "tests": [],
+                "test_results": [],
+                "all_passed": False,
+                "elapsed_ms": 0
+            }
+
+    formatted_tcs = []
+    for tc in test_cases:
+        formatted_tcs.append({
+            "function_name": function_name,
+            "input_args": tc.get("inputs", []),
+            "expected_output": tc.get("expected")
+        })
+
+    marker = f"<<<NX_NODE_RESULT_{uuid.uuid4().hex}>>>"
+
+    wrapper_script = (
+        JS_WRAPPER_TEMPLATE
+        .replace("__USER_CODE_PLACEHOLDER__", user_code)
+        .replace("__TEST_CASES_PLACEHOLDER__", json.dumps(formatted_tcs))
+        .replace("__MARKER_PLACEHOLDER__", marker)
+    )
+
+    with tempfile.NamedTemporaryFile('w', suffix='.js', delete=False, encoding='utf-8') as f:
+        f.write(wrapper_script)
+        temp_path = f.name
+
+    start_time = time.time()
+    proc = None
+    try:
+        proc = subprocess.Popen(
+            ["node", temp_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        stdout, stderr = proc.communicate(timeout=EXECUTION_TIMEOUT_SECONDS)
+        elapsed_ms = int((time.time() - start_time) * 1000)
+
+        stdout = stdout or ""
+        stderr = stderr or ""
+
+        if marker in stdout:
+            parts = stdout.split(marker)
+            logs = parts[0].strip()
+            res_json = json.loads(parts[1].strip())
+            tests_list = res_json.get("tests", [])
+            return {
+                "success": True,
+                "all_passed": res_json.get("all_passed", False),
+                "tests": tests_list,
+                "test_results": tests_list,
+                "output": logs,
+                "logs": logs,
+                "elapsed_ms": elapsed_ms,
+                "error": None
+            }
+        else:
+            return {
+                "success": False,
+                "all_passed": False,
+                "tests": [],
+                "test_results": [],
+                "output": stdout.strip(),
+                "logs": stdout.strip(),
+                "error": stderr.strip() or "JavaScript runtime or syntax error.",
+                "elapsed_ms": elapsed_ms
+            }
+
+    except subprocess.TimeoutExpired:
+        if proc:
+            try:
+                proc.kill()
+                proc.communicate()
+            except Exception:
+                pass
+        return {
+            "success": False,
+            "all_passed": False,
+            "tests": [],
+            "test_results": [],
+            "error": f"Execution Timed Out (exceeded {EXECUTION_TIMEOUT_SECONDS}s limit).",
+            "elapsed_ms": int(EXECUTION_TIMEOUT_SECONDS * 1000)
+        }
+    except Exception as e:
+        if proc:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+        return {
+            "success": False,
+            "all_passed": False,
+            "tests": [],
+            "test_results": [],
+            "error": f"Node execution failed: {str(e)}",
+            "elapsed_ms": 0
+        }
+    finally:
+        try:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+        except Exception:
+            pass
+
+def execute_sql_code(user_code: str, test_cases: list) -> dict:
+    """
+    Executes candidate SQL query against an in-memory SQLite sandbox.
+    Asserts result sets against expected rows/columns.
+    """
+    if not user_code or not user_code.strip():
+        return {
+            "success": False,
+            "error": "No SQL query provided.",
+            "tests": [],
+            "test_results": [],
+            "all_passed": False,
+            "elapsed_ms": 0
+        }
+
+    # Strip single-line comments (-- ...) and multi-line comments (/* ... */)
+    cleaned = re.sub(r'--.*?(\r?\n|$)', ' ', user_code)
+    cleaned = re.sub(r'/\*.*?\*/', ' ', cleaned, flags=re.DOTALL)
+    clean_query = cleaned.strip().rstrip(';')
+
+    if not clean_query:
+        return {
+            "success": False,
+            "error": "Query contains no executable statements.",
+            "tests": [],
+            "test_results": [],
+            "all_passed": False,
+            "elapsed_ms": 0
+        }
+
+    upper_query = clean_query.upper().strip()
+    if not (upper_query.startswith("SELECT") or upper_query.startswith("WITH")):
+        return {
+            "success": False,
+            "error": "Security restriction: Only read-only queries starting with SELECT or WITH are permitted.",
+            "tests": [],
+            "test_results": [],
+            "all_passed": False,
+            "elapsed_ms": 0
+        }
+
+    disallowed_keywords = ["DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "ATTACH", "DETACH", "PRAGMA", "VACUUM", "REINDEX"]
+    for kw in disallowed_keywords:
+        if re.search(r'\b' + kw + r'\b', upper_query):
+            return {
+                "success": False,
+                "error": f"Security restriction: '{kw}' statement is not permitted in SQL challenges.",
+                "tests": [],
+                "test_results": [],
+                "all_passed": False,
+                "elapsed_ms": 0
+            }
+
+    start_time = time.time()
+    results = []
+    all_passed = True
+
+    for idx, tc in enumerate(test_cases):
+        schema_sql = tc.get("schema", "")
+        expected = tc.get("expected", [])
+        inp = tc.get("inputs", ["Default database state"])
+
+        conn = None
+        try:
+            conn = sqlite3.connect(":memory:")
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            if schema_sql:
+                cursor.executescript(schema_sql)
+
+            cursor.execute(clean_query)
+            fetched_rows = cursor.fetchall()
+
+            # Normalize actual rows to list of dicts with lowercase keys
+            actual_dicts = []
+            actual_values = []
+            for r in fetched_rows:
+                d = {k.lower(): r[k] for k in r.keys()}
+                actual_dicts.append(d)
+                actual_values.append(list(r))
+
+            # Normalize expected for comparison
+            # expected can be list of dicts or list of lists/tuples or single values
+            is_match = False
+
+            if isinstance(expected, list):
+                if len(expected) == 0 and len(fetched_rows) == 0:
+                    is_match = True
+                elif len(expected) > 0 and isinstance(expected[0], dict):
+                    normalized_exp = [{k.lower(): v for k, v in exp_d.items()} for exp_d in expected]
+                    is_match = (actual_dicts == normalized_exp)
+                elif len(expected) > 0 and isinstance(expected[0], (list, tuple)):
+                    is_match = (actual_values == [list(e) for e in expected])
+                else:
+                    # Single column list of values
+                    single_col_actual = [r[0] for r in actual_values] if actual_values else []
+                    is_match = (single_col_actual == expected) or (actual_values == expected)
+            elif expected is not None:
+                # single value scalar
+                first_val = actual_values[0][0] if (actual_values and actual_values[0]) else None
+                is_match = (first_val == expected)
+
+            if not is_match:
+                all_passed = False
+
+            results.append({
+                "test_index": idx + 1,
+                "input": inp,
+                "passed": is_match,
+                "actual": actual_dicts if actual_dicts else actual_values,
+                "expected": expected,
+                "error": None
+            })
+
+        except sqlite3.Error as e:
+            all_passed = False
+            results.append({
+                "test_index": idx + 1,
+                "input": inp,
+                "passed": False,
+                "actual": None,
+                "expected": expected,
+                "error": f"SQL Error: {str(e)}"
+            })
+        except Exception as e:
+            all_passed = False
+            results.append({
+                "test_index": idx + 1,
+                "input": inp,
+                "passed": False,
+                "actual": None,
+                "expected": expected,
+                "error": f"Evaluation Exception: {str(e)}"
+            })
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+
+    elapsed_ms = int((time.time() - start_time) * 1000)
+
+    return {
+        "success": True,
+        "all_passed": all_passed,
+        "tests": results,
+        "test_results": results,
+        "output": f"Executed against {len(test_cases)} SQLite scenarios.",
+        "logs": "",
+        "elapsed_ms": elapsed_ms,
+        "error": None
+    }
+
+def execute_code(language: str, user_code: str, test_cases: list, function_name: str = "solution") -> dict:
+    """
+    Unified execution dispatcher supporting Python, JavaScript, and SQL.
+    """
+    lang = (language or "python").lower().strip()
+    if lang in ["javascript", "js", "node"]:
+        return execute_javascript_code(user_code, test_cases, function_name)
+    elif lang in ["sql", "sqlite", "sqlite3"]:
+        return execute_sql_code(user_code, test_cases)
+    else:
+        # Default Python (covers python, py, dsa, data_science, ml, etc.)
+        return execute_python_code(user_code, test_cases, function_name)

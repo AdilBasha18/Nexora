@@ -14,7 +14,9 @@ import {
   AlertCircle,
   TrendingUp,
   FileText,
-  ChevronRight
+  ChevronRight,
+  Terminal,
+  HelpCircle
 } from 'lucide-react';
 
 export default function AssessmentHistoryPage() {
@@ -30,7 +32,7 @@ export default function AssessmentHistoryPage() {
       setError('');
       try {
         const data = await api.getMyAssessmentAttempts();
-        const list = data.results || data;
+        const list = data.results || data || [];
         setAttempts(list);
       } catch (err) {
         console.error("Failed to load attempt history:", err);
@@ -48,21 +50,21 @@ export default function AssessmentHistoryPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-semibold mb-2">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-teal-100 text-teal-800 text-xs font-semibold mb-2">
             <Award className="w-3.5 h-3.5" />
-            <span>Verified Candidate Benchmarking</span>
+            <span>Server-Graded Skill Assessments</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-navy-900 tracking-tight">
             Assessment Attempt History
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Review your past test scores, verified badges, and examine detailed question-by-question explanations.
+            Review your past scores, LeetCode-style sandbox test results, and question-by-question technical solutions.
           </p>
         </div>
 
         <Link
           to="/assessments"
-          className="self-start sm:self-auto px-4 py-2 rounded-xl bg-navy-900 hover:bg-navy-800 text-white text-xs font-semibold shadow-sm transition"
+          className="self-start sm:self-auto px-4 py-2 rounded-xl bg-navy-900 hover:bg-navy-800 text-white text-xs font-bold shadow-sm transition"
         >
           Browse All Assessments
         </Link>
@@ -97,7 +99,7 @@ export default function AssessmentHistoryPage() {
           <div className="space-y-1">
             <h3 className="text-base font-bold text-navy-900">No Assessment Attempts Yet</h3>
             <p className="text-xs text-slate-400 max-w-sm mx-auto">
-              You haven't completed any skill assessments or coding challenges. Take an assessment to benchmark your skills!
+              You haven't completed any skill assessments or coding challenges yet. Take an assessment to benchmark your skills!
             </p>
           </div>
           <Link
@@ -123,23 +125,26 @@ export default function AssessmentHistoryPage() {
               minute: '2-digit'
             });
 
+            const mcqScore = attempt.mcq_score !== undefined ? attempt.mcq_score : (attempt.score ? Math.min(50, attempt.score) : 0);
+            const codingScore = attempt.coding_score !== undefined ? attempt.coding_score : (attempt.score ? Math.max(0, attempt.score - mcqScore) : 0);
+
             return (
               <div
                 key={attempt.id}
                 className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
               >
                 {/* Left: Info */}
-                <div className="space-y-2 flex-1">
+                <div className="space-y-2.5 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold uppercase tracking-wider">
-                      {attempt.category_name || 'General'}
+                      {attempt.category_name || 'General Track'}
                     </span>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                       isPassed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                     }`}>
                       {isPassed ? (
                         <>
-                          <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-600" /> Passed
+                          <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-600" /> Benchmark Passed
                         </>
                       ) : (
                         <>
@@ -157,17 +162,26 @@ export default function AssessmentHistoryPage() {
                     {attempt.assessment_title}
                   </h3>
 
-                  <div className="flex items-center space-x-4 text-xs text-slate-500">
-                    <span>Score: <strong className="text-navy-900">{attempt.correct_answers}/{attempt.total_questions}</strong> correct</span>
-                    <span>•</span>
-                    <span>Passing threshold: <strong className="text-navy-900">{attempt.passing_score}%</strong></span>
+                  {/* MCQ vs Coding Breakdown Badges */}
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 pt-1">
+                    <span className="flex items-center text-teal-700 bg-teal-50 px-2.5 py-1 rounded-lg border border-teal-200/60 font-semibold">
+                      <HelpCircle className="w-3.5 h-3.5 mr-1 text-teal-600" />
+                      MCQ Score: <strong className="ml-1 text-navy-900">{mcqScore}/50</strong>
+                    </span>
+                    <span className="flex items-center text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200/60 font-semibold">
+                      <Terminal className="w-3.5 h-3.5 mr-1 text-purple-600" />
+                      Coding Score: <strong className="ml-1 text-navy-900">{codingScore}/50</strong>
+                    </span>
+                    <span className="text-slate-400">
+                      Req: {attempt.passing_score}%
+                    </span>
                   </div>
                 </div>
 
                 {/* Right: Score Gauge & Actions */}
                 <div className="flex items-center space-x-6 self-stretch md:self-auto justify-between md:justify-end pt-4 md:pt-0 border-t md:border-t-0 border-slate-100">
-                  <div className="text-center">
-                    <div className={`text-2xl font-black ${isPassed ? 'text-emerald-600' : 'text-amber-600'}`}>
+                  <div className="text-center min-w-[70px]">
+                    <div className={`text-3xl font-black ${isPassed ? 'text-emerald-600' : 'text-amber-600'}`}>
                       {attempt.percentage}%
                     </div>
                     <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
@@ -203,4 +217,3 @@ export default function AssessmentHistoryPage() {
     </div>
   );
 }
-
