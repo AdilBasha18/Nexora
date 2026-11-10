@@ -23,8 +23,8 @@ echo [3/3] Starting Frontend (React / Vite on port 5173)...
 start "Nexora - Vite Frontend (Port 5173)" /min cmd /k "cd /d ""%~dp0frontend"" && npm run dev"
 
 echo.
-echo Waiting 5 seconds for services to initialize...
-ping -n 6 127.0.0.1 >nul
+echo Waiting for frontend and backend services to initialize...
+powershell -NoProfile -Command "$timeout = 30; $start = Get-Date; while (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 5173 -InformationLevel Quiet)) { if (((Get-Date) - $start).TotalSeconds -ge $timeout) { break }; Start-Sleep -Milliseconds 600 }"
 
 echo.
 echo ========================================================

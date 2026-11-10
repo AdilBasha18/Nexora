@@ -26,8 +26,8 @@ echo [4/4] Starting Ngrok Tunnel (Port 5173)...
 start "Nexora - Ngrok Tunnel" /min cmd /k "cd /d ""%~dp0"" && ngrok.exe http 5173"
 
 echo.
-echo Connecting and generating public link... (please wait ~5 seconds)
-ping -n 6 127.0.0.1 >nul
+echo Connecting and waiting for services to initialize...
+powershell -NoProfile -Command "$timeout = 30; $start = Get-Date; while (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 5173 -InformationLevel Quiet)) { if (((Get-Date) - $start).TotalSeconds -ge $timeout) { break }; Start-Sleep -Milliseconds 600 }"
 
 set "PUBLIC_URL="
 for /f "tokens=*" %%A in ('powershell -NoProfile -Command "try { (Invoke-RestMethod http://127.0.0.1:4040/api/tunnels).tunnels[0].public_url } catch {}"') do set "PUBLIC_URL=%%A"
