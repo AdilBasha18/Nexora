@@ -297,6 +297,9 @@ def analyze_resume_with_job(resume_text: str, job_title: str, job_description: s
         "missing_skills": missing_skills,
         "matched_keywords": matched_keywords,
         "missing_keywords": missing_keywords,
+        "sections_found": base_result["sections_found"],
+        "missing_sections": base_result["missing_sections"],
+        "section_analysis": base_result["sections_found"],
         "strengths": base_result["strengths"],
         "weaknesses": base_result["weaknesses"],
         "suggestions": role_suggestions,
@@ -382,3 +385,20 @@ def generate_resume_improvements(resume_text: str, target_role: str = "", missin
         "target_potential_score": 92,
         "disclaimer": "All improvements preserve your authentic background. Numerical indicators are sample benchmarks to help you quantify your real-world achievements."
     }
+
+def analyze_resume_ats(resume_text: str, job_description: str = "", job_title: str = "") -> dict:
+    """
+    Backwards compatibility wrapper for tests and legacy callers.
+    """
+    if job_description or job_title:
+        res = analyze_resume_with_job(
+            resume_text=resume_text,
+            job_title=job_title or "Software Developer",
+            job_description=job_description
+        )
+    else:
+        res = analyze_resume_independent(resume_text)
+
+    res["section_analysis"] = res.get("sections_found", {})
+    res["disclaimer"] = res.get("disclaimer", "This ATS analysis is for guidance purposes.")
+    return res

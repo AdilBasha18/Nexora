@@ -143,17 +143,24 @@ class RecruiterApplicationUpdateView(views.APIView):
         interview_notes = request.data.get('interview_notes')
 
         prev_status = app.status
+        prev_interview_date = app.interview_date
 
         if recruiter_notes is not None:
             app.recruiter_notes = recruiter_notes
         if interview_date is not None:
-            app.interview_date = interview_date
+            app.interview_date = interview_date or None
         if interview_location_or_link is not None:
             app.interview_location_or_link = interview_location_or_link
         if interview_notes is not None:
             app.interview_notes = interview_notes
 
+        # Validate status if provided
         if new_status and new_status != prev_status:
+            if new_status not in JobApplication.Status.values:
+                return Response(
+                    {"error": f"Invalid status '{new_status}'. Allowed: {JobApplication.Status.values}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             app.status = new_status
             ApplicationStatusHistory.objects.create(
                 application=app,
@@ -167,6 +174,16 @@ class RecruiterApplicationUpdateView(views.APIView):
                 recipient=app.candidate,
                 title=f"Application Update: {app.job.title}",
                 message=f"Your application status for '{app.job.title}' at {app.job.company.name} is now: {app.get_status_display()}.",
+                notification_type=Notification.NotificationType.APPLICATION_UPDATE,
+                link="/candidate/applications"
+            )
+
+        # Notify candidate if interview was scheduled or updated
+        if interview_date and str(interview_date) != str(prev_interview_date):
+            Notification.objects.create(
+                recipient=app.candidate,
+                title=f"Interview Scheduled: {app.job.title}",
+                message=f"An interview for '{app.job.title}' has been scheduled for {interview_date}.",
                 notification_type=Notification.NotificationType.APPLICATION_UPDATE,
                 link="/candidate/applications"
             )

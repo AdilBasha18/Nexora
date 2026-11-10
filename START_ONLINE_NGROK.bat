@@ -11,7 +11,10 @@ echo.
 cd /d "%~dp0"
 
 echo [1/4] Adding Node.js and Python to PATH...
-set "PATH=%~dp0..\node-v20.11.1-win-x64;C:\Users\SHAIK ADIL BASHA\AppData\Local\Programs\Python\Python312;%PATH%"
+set "PATH=%~dp0..\node-v20.11.1-win-x64;%LOCALAPPDATA%\Programs\Python\Python312;%PATH%"
+
+echo Applying database migrations...
+call python "%~dp0backend\manage.py" migrate --noinput
 
 echo [2/4] Starting Backend (Django REST API on port 8000)...
 start "Nexora - Django Backend (Port 8000)" /min cmd /k "cd /d ""%~dp0backend"" && python manage.py runserver 127.0.0.1:8000"

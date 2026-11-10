@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
+from django.db import transaction
 from .models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -16,6 +17,12 @@ class CandidateRegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ['full_name', 'email', 'password', 'confirm_password']
 
+    def validate_email(self, value):
+        email = value.lower().strip()
+        if User.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError("An account with this email address already exists.")
+        return email
+
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
             raise serializers.ValidationError({"password": "Passwords do not match."})
@@ -24,13 +31,14 @@ class CandidateRegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('confirm_password')
         email = validated_data['email'].lower().strip()
-        user = User.objects.create_user(
-            username=email,
-            email=email,
-            full_name=validated_data['full_name'].strip(),
-            password=validated_data['password'],
-            role=User.Role.CANDIDATE
-        )
+        with transaction.atomic():
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                full_name=validated_data['full_name'].strip(),
+                password=validated_data['password'],
+                role=User.Role.CANDIDATE
+            )
         return user
 
 class RecruiterRegisterSerializer(serializers.ModelSerializer):
@@ -44,6 +52,12 @@ class RecruiterRegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ['full_name', 'email', 'password', 'confirm_password', 'company_name', 'company_website', 'job_title']
 
+    def validate_email(self, value):
+        email = value.lower().strip()
+        if User.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError("An account with this email address already exists.")
+        return email
+
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
             raise serializers.ValidationError({"password": "Passwords do not match."})
@@ -56,26 +70,26 @@ class RecruiterRegisterSerializer(serializers.ModelSerializer):
         job_title = validated_data.pop('job_title').strip()
         
         email = validated_data['email'].lower().strip()
-        user = User.objects.create_user(
-            username=email,
-            email=email,
-            full_name=validated_data['full_name'].strip(),
-            password=validated_data['password'],
-            role=User.Role.RECRUITER,
-            is_verified_recruiter=False  # Requires admin approval or company verification
-        )
-        
-        # Link or create company and recruiter profile
-        from companies.models import Company, RecruiterProfile
-        company, _ = Company.objects.get_or_create(
-            name=company_name,
-            defaults={'website': company_website}
-        )
-        RecruiterProfile.objects.create(
-            user=user,
-            company=company,
-            job_title=job_title
-        )
+        with transaction.atomic():
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                full_name=validated_data['full_name'].strip(),
+                password=validated_data['password'],
+                role=User.Role.RECRUITER,
+                is_verified_recruiter=False
+            )
+            
+            from companies.models import Company, RecruiterProfile
+            company, _ = Company.objects.get_or_create(
+                name=company_name,
+                defaults={'website': company_website}
+            )
+            RecruiterProfile.objects.create(
+                user=user,
+                company=company,
+                job_title=job_title
+            )
         return user
 
 class LoginSerializer(serializers.Serializer):
