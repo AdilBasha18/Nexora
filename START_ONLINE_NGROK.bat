@@ -7,27 +7,41 @@ echo              NEXORA - ONLINE PUBLIC LAUNCHER
 echo ========================================================
 echo.
 
-:: Ensure current directory is this script's directory (handles spaces)
+:: Ensure current directory is this script's directory
 cd /d "%~dp0"
 
-echo [1/4] Adding Node.js and Python to PATH...
-set "PATH=%~dp0..\node-v20.11.1-win-x64;%LOCALAPPDATA%\Programs\Python\Python312;%PATH%"
+:: Resolve absolute path to Node.js
+for %%I in ("%~dp0..") do set "SCRATCH_DIR=%%~fI"
+set "NODE_DIR=%SCRATCH_DIR%\node-v20.11.1-win-x64"
 
-echo Applying database migrations...
-call python "%~dp0backend\manage.py" migrate --noinput
+:: Set clean environment PATH
+set "PATH=%NODE_DIR%;%LOCALAPPDATA%\Programs\Python\Python312;%USERPROFILE%\AppData\Local\Programs\Python\Python312;%PATH%"
+
+echo [1/4] Applying database migrations...
+pushd "%~dp0backend"
+call python manage.py migrate --noinput
+popd
 
 echo [2/4] Starting Backend (Django REST API on port 8000)...
-start "Nexora - Django Backend (Port 8000)" /min cmd /k "cd /d ""%~dp0backend"" && python manage.py runserver 127.0.0.1:8000"
+pushd "%~dp0backend"
+start "Nexora - Django Backend (Port 8000)" /min cmd /k "python manage.py runserver 127.0.0.1:8000"
+popd
 
 echo [3/4] Starting Frontend (React / Vite on port 5173)...
-start "Nexora - Vite Frontend (Port 5173)" /min cmd /k "cd /d ""%~dp0frontend"" && npm run dev"
-
-echo [4/4] Starting Ngrok Tunnel (Port 5173)...
-start "Nexora - Ngrok Tunnel" /min cmd /k "cd /d ""%~dp0"" && ngrok.exe http 5173"
+pushd "%~dp0frontend"
+start "Nexora - Vite Frontend (Port 5173)" /min cmd /k "npm run dev"
+popd
 
 echo.
-echo Connecting and waiting for services to initialize...
+echo Waiting for frontend to initialize before launching tunnel...
 powershell -NoProfile -Command "$timeout = 30; $start = Get-Date; while (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 5173 -InformationLevel Quiet)) { if (((Get-Date) - $start).TotalSeconds -ge $timeout) { break }; Start-Sleep -Milliseconds 600 }"
+
+echo [4/4] Starting Ngrok Tunnel (Port 5173)...
+start "Nexora - Ngrok Tunnel" /min cmd /k "ngrok.exe http 5173"
+
+echo.
+echo Connecting and generating public link... (please wait ~5 seconds)
+ping -n 6 127.0.0.1 >nul
 
 set "PUBLIC_URL="
 for /f "tokens=*" %%A in ('powershell -NoProfile -Command "try { (Invoke-RestMethod http://127.0.0.1:4040/api/tunnels).tunnels[0].public_url } catch {}"') do set "PUBLIC_URL=%%A"

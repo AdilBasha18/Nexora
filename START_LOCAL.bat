@@ -7,20 +7,30 @@ echo               NEXORA - LOCAL DEVELOPMENT LAUNCHER
 echo ========================================================
 echo.
 
-:: Ensure current directory is this script's directory (handles spaces)
+:: Ensure current directory is this script's directory
 cd /d "%~dp0"
 
-echo [1/3] Adding Node.js and Python to PATH...
-set "PATH=%~dp0..\node-v20.11.1-win-x64;%LOCALAPPDATA%\Programs\Python\Python312;%PATH%"
+:: Resolve absolute path to Node.js
+for %%I in ("%~dp0..") do set "SCRATCH_DIR=%%~fI"
+set "NODE_DIR=%SCRATCH_DIR%\node-v20.11.1-win-x64"
 
-echo Applying database migrations...
-call python "%~dp0backend\manage.py" migrate --noinput
+:: Set clean environment PATH
+set "PATH=%NODE_DIR%;%LOCALAPPDATA%\Programs\Python\Python312;%USERPROFILE%\AppData\Local\Programs\Python\Python312;%PATH%"
+
+echo [1/3] Applying database migrations...
+pushd "%~dp0backend"
+call python manage.py migrate --noinput
+popd
 
 echo [2/3] Starting Backend (Django REST API on port 8000)...
-start "Nexora - Django Backend (Port 8000)" /min cmd /k "cd /d ""%~dp0backend"" && python manage.py runserver 127.0.0.1:8000"
+pushd "%~dp0backend"
+start "Nexora - Django Backend (Port 8000)" /min cmd /k "python manage.py runserver 127.0.0.1:8000"
+popd
 
 echo [3/3] Starting Frontend (React / Vite on port 5173)...
-start "Nexora - Vite Frontend (Port 5173)" /min cmd /k "cd /d ""%~dp0frontend"" && npm run dev"
+pushd "%~dp0frontend"
+start "Nexora - Vite Frontend (Port 5173)" /min cmd /k "npm run dev"
+popd
 
 echo.
 echo Waiting for frontend and backend services to initialize...
