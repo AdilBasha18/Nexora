@@ -1,0 +1,18 @@
+from django.urls import path
+from .views import (
+    ATSCheckView,
+    ATSPresetsView,
+    ATSImproveView,
+    ATSDownloadImprovedView,
+    ATSHistoryView,
+    ATSDetailView
+)
+
+urlpatterns = [
+    path('presets/', ATSPresetsView.as_view(), name='ats-presets'),
+    path('check/', ATSCheckView.as_view(), name='ats-check'),
+    path('improve/', ATSImproveView.as_view(), name='ats-improve'),
+    path('download-improved/', ATSDownloadImprovedView.as_view(), name='ats-download-improved'),
+    path('history/', ATSHistoryView.as_view(), name='ats-history'),
+    path('<int:pk>/', ATSDetailView.as_view(), name='ats-detail'),
+]
