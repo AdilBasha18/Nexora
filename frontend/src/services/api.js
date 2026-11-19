@@ -1,4 +1,5 @@
-const BASE_URL = '/api/v1';
+const RAW_API_URL = import.meta.env.VITE_API_BASE_URL || '';
+const BASE_URL = RAW_API_URL ? `${RAW_API_URL.replace(/\/+$/, '')}/api/v1` : '/api/v1';
 
 export function getAuthHeaders() {
   const token = localStorage.getItem('nexora_token');
@@ -77,7 +78,7 @@ export const api = {
   saveImprovedToResumes: (payload) => apiRequest('/ats/save-to-resumes/', { method: 'POST', body: JSON.stringify(payload) }),
   downloadImprovedResume: async (payload) => {
     const token = localStorage.getItem('nexora_token');
-    const res = await fetch('/api/v1/ats/download-improved/', {
+    const res = await fetch(`${BASE_URL}/ats/download-improved/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
