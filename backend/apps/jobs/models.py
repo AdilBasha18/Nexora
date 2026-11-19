@@ -23,9 +23,13 @@ class Job(models.Model):
 
     class Status(models.TextChoices):
         DRAFT = 'DRAFT', 'Draft'
+        PENDING_REVIEW = 'PENDING_REVIEW', 'Pending Review'
+        APPROVED = 'APPROVED', 'Approved'
         PUBLISHED = 'PUBLISHED', 'Published'
         PAUSED = 'PAUSED', 'Paused'
+        REJECTED = 'REJECTED', 'Rejected'
         CLOSED = 'CLOSED', 'Closed'
+        SUSPENDED = 'SUSPENDED', 'Suspended'
 
     recruiter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='posted_jobs')
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='jobs')
@@ -42,13 +46,16 @@ class Job(models.Model):
     location = models.CharField(max_length=255, default='Remote')
     salary_min = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     salary_max = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    salary_currency = models.CharField(max_length=10, default='USD')
+    salary_currency = models.CharField(max_length=10, default='INR')
     is_salary_disclosed = models.BooleanField(default=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PUBLISHED)
     is_verified = models.BooleanField(default=False)
     application_deadline = models.DateField(null=True, blank=True)
     has_scam_warning = models.BooleanField(default=False)
     scam_warning_reason = models.TextField(blank=True)
+    rejection_reason = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='reviewed_jobs')
+    reviewed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

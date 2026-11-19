@@ -24,9 +24,9 @@ class ApplyJobView(views.APIView):
         cover_letter = serializer.validated_data.get('cover_letter', '')
 
         try:
-            job = Job.objects.get(id=job_id, status=Job.Status.PUBLISHED)
+            job = Job.objects.get(id=job_id, status__in=[Job.Status.APPROVED, Job.Status.PUBLISHED], has_scam_warning=False)
         except Job.DoesNotExist:
-            return Response({"error": "Job listing not found or is closed."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Job listing not found, pending review, or is closed."}, status=status.HTTP_404_NOT_FOUND)
 
         if JobApplication.objects.filter(job=job, candidate=request.user).exists():
             return Response({"error": "You have already applied for this job."}, status=status.HTTP_400_BAD_REQUEST)
@@ -65,7 +65,7 @@ class ApplyJobView(views.APIView):
             link=f"/recruiter/applicants?job={job.id}"
         )
 
-        # Notify candidate
+        # Notify candidate (In-app)
         Notification.objects.create(
             recipient=request.user,
             title="Application Submitted",
@@ -73,6 +73,18 @@ class ApplyJobView(views.APIView):
             notification_type=Notification.NotificationType.APPLICATION_UPDATE,
             link="/candidate/applications"
         )
+
+        # Trigger Automated Transactional Emails
+        try:
+            from notifications.services import (
+                notify_candidate_application_submitted,
+                notify_recruiter_application_received
+            )
+            notify_candidate_application_submitted(application)
+            notify_recruiter_application_received(application)
+        except Exception as email_err:
+            import logging
+            logging.getLogger('applications').error(f"Error triggering application emails: {email_err}")
 
         return Response(CandidateApplicationSerializer(application).data, status=status.HTTP_201_CREATED)
 
@@ -178,6 +190,15 @@ class RecruiterApplicationUpdateView(views.APIView):
                 link="/candidate/applications"
             )
 
+            # Trigger automated candidate status email notification
+            try:
+                from notifications.services import notify_candidate_status_update
+                note_text = request.data.get('status_note', '')
+                notify_candidate_status_update(app, new_status, note_text)
+            except Exception as email_err:
+                import logging
+                logging.getLogger('applications').error(f"Error sending candidate status email: {email_err}")
+
         # Notify candidate if interview was scheduled or updated
         if interview_date and str(interview_date) != str(prev_interview_date):
             Notification.objects.create(
@@ -187,6 +208,18 @@ class RecruiterApplicationUpdateView(views.APIView):
                 notification_type=Notification.NotificationType.APPLICATION_UPDATE,
                 link="/candidate/applications"
             )
+
+            try:
+                from notifications.services import notify_candidate_interview_invitation
+                notify_candidate_interview_invitation(
+                    application=app,
+                    interview_date=interview_date,
+                    location_or_link=app.interview_location_or_link,
+                    notes=app.interview_notes
+                )
+            except Exception as email_err:
+                import logging
+                logging.getLogger('applications').error(f"Error sending interview invitation email: {email_err}")
 
         app.save()
         return Response(RecruiterApplicationSerializer(app).data)

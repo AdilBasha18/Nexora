@@ -24,7 +24,7 @@ def compute_job_match(candidate_profile: CandidateProfile, resume: Resume, job: 
     else:
         matched_req = []
         missing_req = []
-        req_score = 80.0  # General default if no required skills specified
+        req_score = 50.0 if candidate_skills else 0.0  # Only score if candidate has skills
 
     # Preferred skills calculation
     if job_preferred:
@@ -34,7 +34,7 @@ def compute_job_match(candidate_profile: CandidateProfile, resume: Resume, job: 
     else:
         matched_pref = []
         missing_pref = []
-        pref_score = 70.0
+        pref_score = 40.0 if candidate_skills else 0.0
 
     # Experience level match
     exp_score = 100.0
@@ -93,6 +93,7 @@ def compute_job_match(candidate_profile: CandidateProfile, resume: Resume, job: 
 def get_recommended_jobs_for_candidate(user, limit: int = 10) -> list:
     """
     Ranks published jobs for a candidate user by match score.
+    Returns empty list if candidate has insufficient data (no skills, target role, or resume).
     """
     try:
         candidate_profile = user.candidate_profile
@@ -103,7 +104,23 @@ def get_recommended_jobs_for_candidate(user, limit: int = 10) -> list:
     if not resume:
         resume = Resume.objects.filter(user=user).order_by('-uploaded_at').first()
 
-    jobs = Job.objects.filter(status=Job.Status.PUBLISHED).select_related('company')
+    # Collect candidate skills
+    candidate_skills = set()
+    if candidate_profile and candidate_profile.skills:
+        candidate_skills.update([s.lower() for s in candidate_profile.skills])
+    if resume and resume.parsed_skills:
+        candidate_skills.update([s.lower() for s in resume.parsed_skills])
+
+    target_role_title = (candidate_profile.target_role or "").strip() if candidate_profile else ""
+
+    # Requirement 8: If insufficient information exists, do not display job matches based on assumed skills
+    if not candidate_skills and not target_role_title and not resume:
+        return []
+
+    jobs = Job.objects.filter(
+        status__in=[Job.Status.APPROVED, Job.Status.PUBLISHED],
+        has_scam_warning=False
+    ).select_related('company')
     scored_jobs = []
 
     for job in jobs:

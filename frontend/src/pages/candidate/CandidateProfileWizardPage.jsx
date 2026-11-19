@@ -726,7 +726,7 @@ export default function CandidateProfileWizardPage() {
                     type="text"
                     value={expectedSalary}
                     onChange={(e) => setExpectedSalary(e.target.value)}
-                    placeholder="e.g. ₹6,00,000 - ₹10,00,000 or $75k"
+                    placeholder="e.g. ₹6,00,000 - ₹12,00,000 per annum"
                     className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white outline-none"
                   />
                 </div>

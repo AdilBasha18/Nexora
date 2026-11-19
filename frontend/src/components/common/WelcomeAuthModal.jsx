@@ -62,12 +62,6 @@ export default function WelcomeAuthModal() {
     setIsOpen(false);
   };
 
-  const handleDemoLogin = (email, pass) => {
-    setLoginEmail(email);
-    setLoginPassword(pass);
-    setLoginError('');
-  };
-
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoginError('');
@@ -248,36 +242,6 @@ export default function WelcomeAuthModal() {
                 </div>
               </div>
 
-              {/* 1-Click Demo Buttons */}
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
-                  Quick Demo 1-Click Fill:
-                </span>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleDemoLogin('alex.morgan@example.com', 'Candidate2026!')}
-                    className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-blue-500 hover:text-blue-600 text-[11px] font-semibold text-slate-700 transition text-center shadow-sm"
-                  >
-                    Candidate
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDemoLogin('recruiter@cloudnova.io', 'Recruiter2026!')}
-                    className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-teal-500 hover:text-teal-600 text-[11px] font-semibold text-slate-700 transition text-center shadow-sm"
-                  >
-                    Recruiter
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDemoLogin('admin@nexora.io', 'NexoraAdmin2026!')}
-                    className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-purple-500 hover:text-purple-600 text-[11px] font-semibold text-slate-700 transition text-center shadow-sm"
-                  >
-                    Admin
-                  </button>
-                </div>
-              </div>
-
               <button
                 type="submit"
                 disabled={loginLoading}
@@ -342,7 +306,7 @@ export default function WelcomeAuthModal() {
                   required
                   value={regEmail}
                   onChange={(e) => setRegEmail(e.target.value)}
-                  placeholder="alex.morgan@example.com"
+                  placeholder="name@example.com"
                   className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition"
                 />
               </div>

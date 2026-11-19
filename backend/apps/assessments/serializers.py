@@ -41,8 +41,8 @@ class QuestionPublicSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'difficulty', 'question_text', 'question_type',
             'input_format', 'output_format', 'constraints', 'examples',
-            'language', 'options', 'order', 'starter_code',
-            'sample_test_cases', 'function_name'
+            'language', 'options', 'order', 'starter_code', 'starter_code_java',
+            'sample_test_cases', 'function_name', 'function_name_java'
         ]
 
 class AssessmentTakeSerializer(serializers.ModelSerializer):
@@ -59,8 +59,8 @@ class AssessmentTakeSerializer(serializers.ModelSerializer):
 
 class AssessmentSubmitSerializer(serializers.Serializer):
     assessment_id = serializers.IntegerField()
-    answers = serializers.DictField(child=serializers.CharField(allow_blank=True), required=False, default=dict)
-    code_answers = serializers.DictField(child=serializers.CharField(allow_blank=True), required=False, default=dict)
+    answers = serializers.DictField(child=serializers.CharField(allow_blank=True, allow_null=True), required=False, default=dict)
+    code_answers = serializers.DictField(child=serializers.JSONField(), required=False, default=dict)
 
 class QuestionDetailResultSerializer(serializers.ModelSerializer):
     class Meta:

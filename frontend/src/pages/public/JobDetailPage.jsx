@@ -147,7 +147,7 @@ export default function JobDetailPage() {
                 </span>
                 {job.is_salary_disclosed && job.salary_min && (
                   <span className="font-bold text-slate-800">
-                    ${Number(job.salary_min).toLocaleString()} - ${Number(job.salary_max).toLocaleString()}
+                    ₹{Number(job.salary_min).toLocaleString('en-IN')} - ₹{Number(job.salary_max).toLocaleString('en-IN')} per annum
                   </span>
                 )}
               </div>
@@ -308,7 +308,7 @@ export default function JobDetailPage() {
                 {resumes.length === 0 ? (
                   <div className="p-3 bg-amber-50 text-amber-800 rounded-xl">
                     No resume uploaded yet.{' '}
-                    <Link to="/candidate/resumes" className="underline font-bold">Upload one now</Link>
+                    <Link to="/ats-checker" className="underline font-bold">Upload one now</Link>
                   </div>
                 ) : (
                   <select

@@ -141,7 +141,7 @@ export default function CandidateRecommendedJobsPage() {
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-900">
                   {job.is_salary_disclosed && job.salary_min ? (
-                    `$${Number(job.salary_min).toLocaleString()} - $${Number(job.salary_max).toLocaleString()}`
+                    `₹${Number(job.salary_min).toLocaleString('en-IN')} - ₹${Number(job.salary_max).toLocaleString('en-IN')} per annum`
                   ) : (
                     'Competitive Salary'
                   )}

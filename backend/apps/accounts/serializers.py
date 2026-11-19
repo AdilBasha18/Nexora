@@ -6,8 +6,8 @@ from .models import User
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'username', 'full_name', 'role', 'is_verified_recruiter', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'role', 'is_verified_recruiter', 'created_at', 'updated_at']
+        fields = ['id', 'email', 'username', 'full_name', 'role', 'recruiter_status', 'recruiter_rejection_reason', 'is_verified_recruiter', 'is_suspended', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'role', 'recruiter_status', 'recruiter_rejection_reason', 'is_verified_recruiter', 'is_suspended', 'created_at', 'updated_at']
 
 class CandidateRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
@@ -77,6 +77,7 @@ class RecruiterRegisterSerializer(serializers.ModelSerializer):
                 full_name=validated_data['full_name'].strip(),
                 password=validated_data['password'],
                 role=User.Role.RECRUITER,
+                recruiter_status=User.RecruiterStatus.PENDING,
                 is_verified_recruiter=False
             )
             
@@ -105,6 +106,8 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError({"non_field_errors": ["Invalid email or password."]})
         if not user.is_active:
             raise serializers.ValidationError({"non_field_errors": ["Account is deactivated."]})
+        if getattr(user, 'is_suspended', False):
+            raise serializers.ValidationError({"non_field_errors": ["Your account has been suspended by the platform administrator. Please contact support."]})
         
         attrs['user'] = user
         return attrs

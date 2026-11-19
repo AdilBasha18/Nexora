@@ -30,6 +30,32 @@ class JobReadinessView(views.APIView):
         readiness = calculate_job_readiness(request.user, target_role_id=role_id)
         return Response(readiness)
 
+    def post(self, request):
+        role_id = request.data.get('target_role_id') or request.data.get('role_id')
+        role_title = request.data.get('role_title')
+        target_role = None
+
+        if role_id:
+            target_role = TargetRole.objects.filter(id=role_id).first()
+        elif role_title:
+            target_role = TargetRole.objects.filter(title__iexact=role_title).first()
+            if not target_role:
+                target_role = TargetRole.objects.filter(title__icontains=role_title).first()
+
+        if not target_role:
+            return Response({"error": "Target role not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Update candidate profile's target role
+        try:
+            profile = request.user.candidate_profile
+            profile.target_role = target_role.title
+            profile.save(update_fields=['target_role'])
+        except Exception as e:
+            pass
+
+        readiness = calculate_job_readiness(request.user, target_role_id=target_role.id)
+        return Response(readiness)
+
 class CandidateRoadmapView(views.APIView):
     permission_classes = [permissions.IsAuthenticated, IsCandidate]
 

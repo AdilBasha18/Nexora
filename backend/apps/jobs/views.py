@@ -3,14 +3,18 @@ from rest_framework.response import Response
 from django.db.models import Q
 from .models import Job, SavedJob
 from .serializers import JobSerializer, JobCreateUpdateSerializer, SavedJobSerializer
-from accounts.permissions import IsRecruiter, IsCandidate
+from accounts.permissions import IsRecruiter, IsApprovedRecruiter, IsCandidate
 
 class JobListView(generics.ListAPIView):
     serializer_class = JobSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        queryset = Job.objects.filter(status=Job.Status.PUBLISHED).select_related('company').order_by('-created_at')
+        # Chunk 4: Only APPROVED/PUBLISHED jobs without active scam warnings appear publicly
+        queryset = Job.objects.filter(
+            status__in=[Job.Status.APPROVED, Job.Status.PUBLISHED],
+            has_scam_warning=False
+        ).select_related('company').order_by('-created_at')
         
         # Search query
         q = self.request.query_params.get('search', '').strip()
@@ -25,7 +29,6 @@ class JobListView(generics.ListAPIView):
         # Filter by skill
         skill = self.request.query_params.get('skill', '').strip()
         if skill:
-            # Check JSON array contains
             queryset = queryset.filter(
                 Q(required_skills__icontains=skill) |
                 Q(preferred_skills__icontains=skill)
@@ -59,10 +62,25 @@ class JobListView(generics.ListAPIView):
         return queryset
 
 class JobDetailView(generics.RetrieveAPIView):
-    queryset = Job.objects.all().select_related('company')
     serializer_class = JobSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'id'
+
+    def get_queryset(self):
+        user = self.request.user
+        if user and user.is_authenticated and (user.is_platform_admin or getattr(user, 'is_superuser', False)):
+            return Job.objects.all().select_related('company')
+        if user and user.is_authenticated and user.is_recruiter:
+            # Recruiter can view public approved jobs OR their own jobs
+            return Job.objects.filter(
+                Q(status__in=[Job.Status.APPROVED, Job.Status.PUBLISHED], has_scam_warning=False) |
+                Q(recruiter=user)
+            ).select_related('company')
+        # Public & candidates can ONLY view approved/published jobs without scam warnings
+        return Job.objects.filter(
+            status__in=[Job.Status.APPROVED, Job.Status.PUBLISHED],
+            has_scam_warning=False
+        ).select_related('company')
 
 class RecruiterJobCreateListView(views.APIView):
     permission_classes = [permissions.IsAuthenticated, IsRecruiter]
@@ -72,9 +90,28 @@ class RecruiterJobCreateListView(views.APIView):
         return Response(JobSerializer(jobs, many=True, context={'request': request}).data)
 
     def post(self, request):
+        # Chunk 3: Only approved recruiters can post/publish jobs
+        if not request.user.is_platform_admin:
+            if getattr(request.user, 'recruiter_status', '') != 'APPROVED':
+                return Response({
+                    "error": "Your recruiter account is pending administrator approval. You cannot publish jobs until approved.",
+                    "recruiter_status": getattr(request.user, 'recruiter_status', 'PENDING'),
+                    "rejection_reason": getattr(request.user, 'recruiter_rejection_reason', '')
+                }, status=status.HTTP_403_FORBIDDEN)
+
         serializer = JobCreateUpdateSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             job = serializer.save()
+
+            # Trigger automated job submission confirmation email (Recruiter + Admin alert)
+            try:
+                from notifications.services import notify_recruiter_job_submitted, notify_admin_job_submitted
+                notify_recruiter_job_submitted(job)
+                notify_admin_job_submitted(job)
+            except Exception as email_err:
+                import logging
+                logging.getLogger('jobs').error(f"Error sending job submission email: {email_err}")
+
             return Response(JobSerializer(job, context={'request': request}).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

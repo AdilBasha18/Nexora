@@ -35,6 +35,7 @@ class AccountsAuthTestCase(TestCase):
         self.assertIn('token', response.data)
         user = User.objects.get(email='taylor@nova.com')
         self.assertEqual(user.role, 'RECRUITER')
+        self.assertEqual(user.recruiter_status, 'PENDING')
         self.assertFalse(user.is_verified_recruiter)
 
     def test_login(self):
@@ -51,4 +52,20 @@ class AccountsAuthTestCase(TestCase):
         })
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('token', response.data)
+
+    def test_suspended_user_cannot_login(self):
+        User.objects.create_user(
+            username='suspended@example.com',
+            email='suspended@example.com',
+            full_name='Suspended User',
+            password='ValidPassword123!',
+            role=User.Role.CANDIDATE,
+            is_suspended=True
+        )
+        response = self.client.post(reverse('login'), {
+            "email": "suspended@example.com",
+            "password": "ValidPassword123!"
+        })
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("suspended", str(response.data))
 

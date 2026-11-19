@@ -92,7 +92,7 @@ ASSESSMENTS_DATA["python-core-oop-proficiency"] = [
             {"input": "nums = [2, 7, 11, 15], target = 9", "output": "[0, 1]", "explanation": "nums[0] + nums[1] = 2 + 7 = 9"},
             {"input": "nums = [3, 2, 4], target = 6", "output": "[1, 2]", "explanation": "nums[1] + nums[2] = 2 + 4 = 6"}
         ],
-        "starter_code": "def two_sum(nums, target):\n    # Write your solution below\n    seen = {}\n    for i, num in enumerate(nums):\n        diff = target - num\n        if diff in seen:\n            return [seen[diff], i]\n        seen[num] = i\n    return []\n",
+        "starter_code": "def two_sum(nums, target):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[2, 7, 11, 15], 9], "expected": [0, 1]},
             {"inputs": [[3, 2, 4], 6], "expected": [1, 2]}

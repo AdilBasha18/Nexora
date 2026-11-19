@@ -266,12 +266,112 @@ ROLE_BLUEPRINTS = {
             ("Scenario-Based Bug Hunting & Test Strategy", "How to write a comprehensive test plan for complex features (e.g. payment gateway or file uploader).", "Test Strategy", "Software Testing Help", "https://www.softwaretestinghelp.com/", "2 weeks"),
             ("Automation Code Problem Solving", "Solve live coding locator challenges, synchronization waits, and iframe/shadow DOM handling.", "Automation", "Nexora Skill Assessments", "/assessments", "1-2 weeks"),
         ]
+    },
+
+    "data engineering": {
+        "beginner": [
+            ("Advanced SQL & Dimensional Data Modeling", "Master window functions, CTEs, Star & Snowflake schemas, SCD types, and normalization.", "SQL", "PostgreSQL Official Tutorial", "https://www.postgresqltutorial.com/", "2-3 weeks"),
+            ("Python for High-Throughput Data Pipelines", "Polars, DuckDB, generator streams, parquet columnar readers, and memory-safe processing.", "Python", "Polars Guide", "https://docs.pola.rs/", "2 weeks"),
+            ("Linux CLI, SSH & Cloud Storage (S3/GCS)", "Object lifecycle management, partitioning schemes, and bash automation.", "Linux", "Linux Journey", "https://linuxjourney.com/", "1-2 weeks"),
+        ],
+        "intermediate": [
+            ("Distributed Big Data with Apache Spark & PySpark", "Spark Catalyst optimizer, DataFrame API, shuffle partitioning, broadcast joins, and AQE.", "Apache Spark", "Apache Spark Official Docs", "https://spark.apache.org/docs/latest/", "3-4 weeks"),
+            ("Workflow Orchestration with Apache Airflow", "Authoring modular DAGs, custom operators, dynamic task mapping, XComs, and Celery executors.", "Airflow", "Apache Airflow Tutorial", "https://airflow.apache.org/docs/apache-airflow/stable/tutorial/index.html", "3 weeks"),
+            ("Real-Time Streaming with Apache Kafka", "Topics, partition rebalancing, consumer groups, exactly-once semantics, and schema registries.", "Kafka", "Confluent Kafka Foundations", "https://developer.confluent.io/learn/kafka-foundations/", "3 weeks"),
+        ],
+        "advanced": [
+            ("Data Lakehouse Architecture (Delta Lake & Iceberg)", "ACID transactions on object storage, time-travel queries, compaction, and catalog federation.", "Delta Lake", "Delta Lake Documentation", "https://docs.delta.io/latest/index.html", "2-3 weeks"),
+            ("Cloud Warehousing with dbt (Snowflake / BigQuery)", "Transformations with dbt models, incremental materializations, testing, and documentation.", "dbt", "dbt Learn", "https://courses.getdbt.com/", "2 weeks"),
+        ],
+        "projects": [
+            ("Real-Time Financial Market Lakehouse", "Stream trade events via Kafka into Spark Structured Streaming and persist to Delta Lake with dbt analytics models.", "Kafka, Spark, Delta Lake, dbt, Docker", "https://github.com", "4 weeks"),
+            ("Automated Enterprise ETL with Airflow & Snowflake", "Orchestrate multi-source batch ingestion with schema evolution checks, Great Expectations validation, and Slack alerting.", "Airflow, Snowflake, Python", "https://github.com", "3 weeks"),
+        ],
+        "interview_prep": [
+            ("Spark Internals & Shuffle Performance Tuning", "Solve skewed partitions, OOM errors, and memory spill diagnostics.", "Spark Tuning", "Spark Optimization Guide", "/assessments", "1-2 weeks"),
+            ("Data Architecture System Design", "Design a petabyte-scale clickstream logging pipeline or customer data platform.", "System Design", "System Design Primer", "https://github.com/donnemartin/system-design-primer", "2 weeks"),
+        ]
+    },
+    "mlops & platform": {
+        "beginner": [
+            ("Containerization with Docker & Multi-Stage Builds", "Containerizing ML runtimes, GPU passthrough, and minimal Alpine base images.", "Docker", "Docker Curriculum", "https://docker-curriculum.com/", "2 weeks"),
+            ("Model Tracking & Experimentation with MLflow", "Artifact storage, metric logging, run comparisons, and model registry lifecycle states.", "MLflow", "MLflow Official Docs", "https://mlflow.org/docs/latest/index.html", "2 weeks"),
+            ("CI/CD Automation for Data Science with GitHub Actions", "Automated model linting, unit testing, and CML evaluation reports.", "CI/CD", "Continuous Machine Learning (CML)", "https://cml.dev/", "2 weeks"),
+        ],
+        "intermediate": [
+            ("Feature Stores with Feast / Hopsworks", "Synchronizing Redis online inference stores with BigQuery/Snowflake offline batch stores.", "Feature Store", "Feast Quickstart", "https://docs.feast.dev/", "3 weeks"),
+            ("High-Performance Serving (FastAPI, Triton & vLLM)", "Batching requests, model concurrency, and GPU memory utilization.", "FastAPI", "vLLM Documentation", "https://docs.vllm.ai/", "3 weeks"),
+            ("Kubernetes for Machine Learning (KubeRay & KServe)", "Custom resource definitions, autoscaling GPU worker pools, and serverless inference rollouts.", "Kubernetes", "KServe Docs", "https://kserve.github.io/website/", "3 weeks"),
+        ],
+        "advanced": [
+            ("Data Drift, Model Drift & Prometheus Telemetry", "Calculating PSI and KS-test with Evidently AI, Grafana dashboards, and retraining triggers.", "Monitoring", "Evidently AI Docs", "https://docs.evidentlyai.com/", "2-3 weeks"),
+            ("Zero-Downtime Deployment (Canary & Shadow Routing)", "Istio service mesh traffic splitting, shadow traffic mirroring, and automated rollback policies.", "Cloud Architecture", "Istio Traffic Management", "https://istio.io/latest/docs/concepts/traffic-management/", "2 weeks"),
+        ],
+        "projects": [
+            ("Production LLM Serving Gateway", "Deploy a vLLM proxy with token-bucket rate limiting, Redis semantic cache, and Prometheus SLA metrics.", "vLLM, FastAPI, Redis, Prometheus, Grafana", "https://github.com", "4 weeks"),
+            ("End-to-End MLOps Pipeline with Automated Retraining", "Feature ingestion in Feast, model training triggered by data drift, versioned in MLflow, and deployed via canary rollout.", "MLflow, Feast, Evidently, Docker, GitHub Actions", "https://github.com", "3-4 weeks"),
+        ],
+        "interview_prep": [
+            ("MLOps System Design Drills", "Design a real-time fraud detection pipeline with 20ms SLA.", "System Design", "MLOps Guide", "/assessments", "2 weeks"),
+            ("Drift Mitigation & Training-Serving Skew", "Troubleshooting features that diverge in production and numerical precision mismatches.", "ML Engineering", "Nexora MLOps Quiz", "/assessments", "1 week"),
+        ]
+    },
+    "generative ai & rag": {
+        "beginner": [
+            ("LLM Fundamentals & Prompt Engineering", "Chain-of-thought, few-shot prompting, structured JSON outputs, and token budgeting across OpenAI & Claude APIs.", "Prompt Engineering", "OpenAI Prompt Engineering Guide", "https://platform.openai.com/docs/guides/prompt-engineering", "2 weeks"),
+            ("Python Async Programming & API SDKs", "Streaming completions, rate limit handling, and token count calculations with tiktoken.", "Python", "Python Async Docs", "https://docs.python.org/3/library/asyncio.html", "2 weeks"),
+            ("Embedding Models & Vector Space Mathematics", "Cosine similarity, dot product, cross-encoders, and dense semantic representations.", "Machine Learning", "Hugging Face Embedding Guide", "https://huggingface.co/blog/getting-started-with-embeddings", "1-2 weeks"),
+        ],
+        "intermediate": [
+            ("Vector Databases & Indexing (Qdrant / Pinecone / Chroma)", "HNSW graph search, IVF indexing, metadata payload filtering, and collection sharding.", "Vector Databases", "Pinecone Learning Center", "https://www.pinecone.io/learn/", "3 weeks"),
+            ("Advanced RAG & Hybrid Retrieval", "Recursive character chunking, sliding window overlap, Reciprocal Rank Fusion (RRF), and re-ranking.", "RAG", "PromptingGuide RAG Deep Dive", "https://www.promptingguide.ai/techniques/rag", "3 weeks"),
+            ("Autonomous Multi-Agent Orchestration (LangGraph / CrewAI)", "StateGraph cycles, conditional branching, tool-calling protocols, and human-in-the-loop checkpoints.", "Agentic AI", "LangGraph Documentation", "https://langchain-ai.github.io/langgraph/", "3 weeks"),
+        ],
+        "advanced": [
+            ("LLM Evaluation & Guardrails (Ragas & NeMo Guardrails)", "Evaluating context precision, faithfulness, answer relevancy, and preventing jailbreak attacks.", "LLM Evaluation", "Ragas Evaluation Framework", "https://docs.ragas.io/", "2-3 weeks"),
+            ("Efficient Fine-Tuning with LoRA & PEFT", "Low-Rank Adaptation, QLoRA 4-bit quantization, and Hugging Face SFTTrainer.", "Fine-Tuning", "Hugging Face PEFT Guide", "https://huggingface.co/docs/peft/index", "3 weeks"),
+        ],
+        "projects": [
+            ("Enterprise Multi-Agent Research & Synthesis Engine", "Build an autonomous research swarm with LangGraph where planner, searcher, coder, and critic agents collaborate.", "LangGraph, OpenAI, FastAPI, Qdrant, React", "https://github.com", "4 weeks"),
+            ("Hybrid RAG Platform with Cross-Encoder Re-Ranking", "Ingest multi-format PDFs, generate dense and BM25 sparse vectors, merge via RRF, and evaluate with Ragas.", "Python, Qdrant, BM25, Cohere, Ragas, Next.js", "https://github.com", "3 weeks"),
+        ],
+        "interview_prep": [
+            ("RAG Bottlenecks & Context Optimization", "Handling lost-in-the-middle phenomena, query decomposition, and hallucination guardrails.", "RAG Architecture", "Nexora GenAI Assessment", "/assessments", "1-2 weeks"),
+            ("Agent Reliability & State Convergence", "Preventing infinite agent loops and deterministic tool schemas.", "Agentic AI", "System Design Primer", "https://github.com/donnemartin/system-design-primer", "1-2 weeks"),
+        ]
+    },
+    "cloud security": {
+        "beginner": [
+            ("Cloud Networking & Security Perimeter", "VPC subnets, internet gateways, NAT, route tables, security groups, and stateful vs stateless NACLs.", "Network Security", "AWS VPC Security Fundamentals", "https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Security.html", "2 weeks"),
+            ("IAM Architecture & Least Privilege Governance", "Role assumption, policy evaluation logic, permission boundaries, SCPs, and temporary credentials (STS).", "IAM", "AWS IAM Best Practices", "https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html", "2 weeks"),
+            ("Linux Hardening & Secrets Management", "SSH hardening, iptables, HashiCorp Vault, AWS Secrets Manager, and KMS envelope encryption.", "Linux", "HashiCorp Vault Tutorial", "https://developer.hashicorp.com/vault/tutorials", "2 weeks"),
+        ],
+        "intermediate": [
+            ("Infrastructure as Code Security (tfsec, Checkov, Trivy)", "Static analysis of Terraform scripts, misconfiguration prevention, and pre-commit security gates.", "DevSecOps", "Checkov Documentation", "https://www.checkov.io/", "3 weeks"),
+            ("Container & Kubernetes Security (Falco & OPA/Gatekeeper)", "Pod Security Standards, Admission Controllers, runtime container threat detection.", "Kubernetes Security", "Kubernetes Security Guide", "https://kubernetes.io/docs/concepts/security/", "3 weeks"),
+            ("Zero Trust Architecture & Mutual TLS (mTLS)", "Service identity with SPIFFE/SPIRE, service mesh mTLS enforcement, and microsegmentation.", "Zero Trust", "NIST Zero Trust Architecture", "https://csrc.nist.gov/publications/detail/sp/800-207/final", "3 weeks"),
+        ],
+        "advanced": [
+            ("Cloud SIEM, Threat Detection & Incident Response", "Ingesting CloudTrail/VPC Flow Logs into SIEM and automated incident containment with Lambda.", "Incident Response", "AWS Incident Response Whitepaper", "https://docs.aws.amazon.com/whitepapers/latest/aws-incident-response-guide/welcome.html", "2-3 weeks"),
+            ("OWASP Top 10 API Security & WAF Rules", "Defending against BOLA, broken authentication, mass assignment, and configuring AWS WAF rate-limiting.", "API Security", "OWASP API Security Top 10", "https://owasp.org/www-project-api-security/", "2 weeks"),
+        ],
+        "projects": [
+            ("Automated Cloud DevSecOps Pipeline", "GitHub Actions workflow executing Checkov on Terraform, scanning Docker containers with Trivy, and enforcing image signatures with Cosign.", "Terraform, Checkov, Trivy, Cosign, GitHub Actions", "https://github.com", "3-4 weeks"),
+            ("Zero Trust Service Mesh with Automated Threat Isolation", "Configure Istio service mesh with strict mTLS and JWT authorization, with Falco runtime alerting.", "Kubernetes, Istio, Falco, NetworkPolicies", "https://github.com", "4 weeks"),
+        ],
+        "interview_prep": [
+            ("IAM Policy Evaluation & Threat Modeling", "Evaluate multi-tier policies, SCPs, and execute STRIDE threat modeling on cloud architectures.", "IAM & Threat Modeling", "Nexora Cloud Security Assessment", "/assessments", "1-2 weeks"),
+            ("Cloud Security Incident Response Drills", "Step-by-step containment of leaked AWS credentials and crypto-mining Pod detection.", "Security Operations", "SANS Incident Response Guide", "https://www.sans.org/", "2 weeks"),
+        ]
     }
 }
+
 
 def calculate_job_readiness(user, target_role_id: int = None) -> dict:
     """
     Transparent, explainable multi-factor Job Readiness Score calculation.
+    Returns honest data. For new users with no target role or profile data,
+    returns an explicit 'Not Available Yet' onboarding state to prevent fake scores.
     """
     try:
         candidate_profile = user.candidate_profile
@@ -282,27 +382,67 @@ def calculate_job_readiness(user, target_role_id: int = None) -> dict:
     target_role = None
     if target_role_id:
         target_role = TargetRole.objects.filter(id=target_role_id).first()
-    
     if not target_role and candidate_profile and candidate_profile.target_role:
         target_role = TargetRole.objects.filter(title__icontains=candidate_profile.target_role).first()
-        
-    if not target_role:
-        target_role = TargetRole.objects.first()
 
-    if not target_role:
-        return {
-            "overall_readiness": 50,
-            "error": "No target role found in system."
-        }
-
-    # 1. Candidate skills aggregation
+    # Collect available candidate data
     candidate_skills = set()
     if candidate_profile and candidate_profile.skills:
         candidate_skills.update([s.lower() for s in candidate_profile.skills])
-    
+
     resume = Resume.objects.filter(user=user, is_primary=True).first()
+    if not resume:
+        resume = Resume.objects.filter(user=user).order_by('-uploaded_at').first()
     if resume and resume.parsed_skills:
         candidate_skills.update([s.lower() for s in resume.parsed_skills])
+
+    attempts = AssessmentAttempt.objects.filter(candidate=user)
+    latest_ats = ATSAnalysis.objects.filter(user=user).order_by('-created_at').first()
+
+    # For genuinely new users with no data, return authentic onboarding state - no fake scores
+    profile_completion = (candidate_profile.completion_percentage or 0) if candidate_profile else 0
+    has_sufficient_data = bool(
+        target_role and (
+            candidate_skills or
+            attempts.exists() or
+            latest_ats or
+            profile_completion > 15
+        )
+    )
+
+    if not has_sufficient_data:
+        return {
+            "is_calculated": False,
+            "overall_readiness": None,
+            "readiness_level": "Not Available Yet",
+            "status_text": "Not Available Yet",
+            "message": "Complete your profile, upload a resume, or choose a target role to calculate your score.",
+            "target_role": {"id": target_role.id, "title": target_role.title} if target_role else None,
+            "component_breakdown": {
+                "skills": {"score": None, "weight": 30, "label": "Skills Match"},
+                "assessments": {"score": None, "weight": 25, "label": "Skill Assessments"},
+                "resume": {"score": None, "weight": 25, "label": "Resume ATS Alignment"},
+                "profile": {"score": None, "weight": 20, "label": "Profile & Experience"}
+            },
+            "component_scores": {"skill_coverage": None, "assessment_demonstration": None, "resume_alignment": None, "experience_and_projects": None},
+            "demonstrated_skills": [],
+            "skill_gaps": [],
+            "strongest_areas": [],
+            "priority_gaps": [],
+            "recommendations": [
+                "Select your target career role to benchmark required industry skills.",
+                "Complete your candidate profile with education, experience, and verified technical skills.",
+                "Upload your resume to ATS Resume Checker for automated skill extraction.",
+                "Take a Skill Assessment to prove your coding and problem-solving abilities."
+            ],
+            "disclaimer": "Complete your profile to calculate an accurate Job Readiness Score."
+        }
+
+    # Enough data exists - calculate genuine score
+    if not target_role:
+        target_role = TargetRole.objects.first()
+    if not target_role:
+        return {"is_calculated": False, "overall_readiness": None, "readiness_level": "Not Available Yet", "status_text": "Not Available Yet", "message": "No target roles found in system."}
 
     role_req_skills = [s.lower() for s in (target_role.required_skills or [])]
     role_pref_skills = [s.lower() for s in (target_role.preferred_skills or [])]
@@ -311,54 +451,68 @@ def calculate_job_readiness(user, target_role_id: int = None) -> dict:
     missing_req = [s for s in role_req_skills if s not in candidate_skills]
     matched_pref = [s for s in role_pref_skills if s in candidate_skills]
 
-    # Skill coverage (40% weight)
+    # 1. Skill coverage (30% weight)
     if role_req_skills:
         skill_coverage_score = int(((len(matched_req) + 0.5 * len(matched_pref)) / max(1, len(role_req_skills) + 0.5 * len(role_pref_skills))) * 100)
     else:
-        skill_coverage_score = 65
-    skill_coverage_score = min(skill_coverage_score, 100)
+        skill_coverage_score = 50
+    skill_coverage_score = min(max(skill_coverage_score, 0), 100)
 
     # 2. Assessment Demonstration (25% weight)
-    attempts = AssessmentAttempt.objects.filter(candidate=user)
     if attempts.exists():
         avg_score = sum(a.percentage for a in attempts) / attempts.count()
         assessment_score = int(avg_score)
     else:
-        assessment_score = 20  # Baseline before taking any assessments
+        assessment_score = 0
+    assessment_score = min(max(assessment_score, 0), 100)
 
-    # 3. Resume Alignment (20% weight)
-    latest_ats = ATSAnalysis.objects.filter(user=user).order_by('-created_at').first()
+    # 3. Resume Alignment (25% weight)
     if latest_ats:
         resume_score = latest_ats.overall_score
     elif resume:
-        resume_score = 60  # Has resume uploaded
+        resume_score = 50
     else:
-        resume_score = 25  # No resume yet
+        resume_score = 0
+    resume_score = min(max(resume_score, 0), 100)
 
-    # 4. Project & Experience Evidence (15% weight)
-    evidence_score = 20
+    # 4. Profile & Evidence Completion (20% weight)
     if candidate_profile:
+        profile_score = candidate_profile.completion_percentage or 0
         if candidate_profile.projects and len(candidate_profile.projects) > 0:
-            evidence_score += 40
+            profile_score = max(profile_score, 60)
         if candidate_profile.experience_years and float(candidate_profile.experience_years) > 0:
-            evidence_score += 40
-    evidence_score = min(evidence_score, 100)
+            profile_score = max(profile_score, 75)
+    else:
+        profile_score = 0
+    profile_score = min(max(profile_score, 0), 100)
 
-    # Weighted Overall:
+    # Weighted Overall
     overall = int(
-        (skill_coverage_score * 0.40) +
+        (skill_coverage_score * 0.30) +
         (assessment_score * 0.25) +
-        (resume_score * 0.20) +
-        (evidence_score * 0.15)
+        (resume_score * 0.25) +
+        (profile_score * 0.20)
     )
-    overall = min(max(overall, 15), 98)
+    overall = min(max(overall, 0), 100)
+
+    # Readiness Level Classification
+    if overall >= 80:
+        readiness_level = "High Readiness"
+    elif overall >= 60:
+        readiness_level = "Moderate Readiness"
+    elif overall >= 30:
+        readiness_level = "Developing Readiness"
+    else:
+        readiness_level = "Early Stage"
 
     # Strongest areas & priority gaps
-    strongest_areas = [s.title() for s in matched_req[:4]]
-    if not strongest_areas and candidate_skills:
-        strongest_areas = [s.title() for s in list(candidate_skills)[:3]]
+    demonstrated_skills = [s.title() for s in matched_req]
+    if not demonstrated_skills and candidate_skills:
+        demonstrated_skills = [s.title() for s in list(candidate_skills)[:5]]
 
-    priority_gaps = [s.title() for s in missing_req[:4]]
+    skill_gaps = [s.title() for s in missing_req]
+    strongest_areas = demonstrated_skills[:4]
+    priority_gaps = skill_gaps[:4]
 
     # Next actionable recommendations
     recommendations = []
@@ -372,19 +526,32 @@ def calculate_job_readiness(user, target_role_id: int = None) -> dict:
         recommendations.append("Add 1-2 portfolio projects highlighting real-world code.")
 
     return {
+        "is_calculated": True,
         "overall_readiness": overall,
+        "readiness_level": readiness_level,
         "target_role": {
             "id": target_role.id,
             "title": target_role.title,
             "salary_range": target_role.average_salary,
-            "market_demand": target_role.market_demand
+            "market_demand": target_role.market_demand,
+            "required_skills": target_role.required_skills,
+            "preferred_skills": target_role.preferred_skills,
+            "description": target_role.description
+        },
+        "component_breakdown": {
+            "skills": { "score": skill_coverage_score, "weight": 30, "label": "Skills Match" },
+            "assessments": { "score": assessment_score, "weight": 25, "label": "Skill Assessments" },
+            "resume": { "score": resume_score, "weight": 25, "label": "Resume ATS Alignment" },
+            "profile": { "score": profile_score, "weight": 20, "label": "Profile & Experience" }
         },
         "component_scores": {
             "skill_coverage": skill_coverage_score,
             "assessment_demonstration": assessment_score,
             "resume_alignment": resume_score,
-            "experience_and_projects": evidence_score
+            "experience_and_projects": profile_score
         },
+        "demonstrated_skills": demonstrated_skills,
+        "skill_gaps": skill_gaps,
         "strongest_areas": strongest_areas,
         "priority_gaps": priority_gaps,
         "recommendations": recommendations,
@@ -394,17 +561,26 @@ def calculate_job_readiness(user, target_role_id: int = None) -> dict:
 def find_matching_blueprint(role_title: str) -> dict:
     """Finds best curated blueprint by title keywords."""
     title_lower = role_title.lower()
+    # More specific matches first
+    if "data engineer" in title_lower or "big data" in title_lower:
+        return ROLE_BLUEPRINTS["data engineering"]
+    if "mlops" in title_lower or "platform engineer" in title_lower:
+        return ROLE_BLUEPRINTS["mlops & platform"]
+    if "generative ai" in title_lower or "rag" in title_lower or "llm" in title_lower or "prompt engineer" in title_lower:
+        return ROLE_BLUEPRINTS["generative ai & rag"]
+    if "cloud security" in title_lower or "security engineer" in title_lower or "devsec" in title_lower:
+        return ROLE_BLUEPRINTS["cloud security"]
     if "python" in title_lower:
         return ROLE_BLUEPRINTS["python"]
-    if "full stack" in title_lower or "web engineer" in title_lower:
+    if "full stack" in title_lower or "web engineer" in title_lower or "frontend" in title_lower:
         return ROLE_BLUEPRINTS["full stack"]
-    if "data analyst" in title_lower:
+    if "data analyst" in title_lower or "business intelligence" in title_lower:
         return ROLE_BLUEPRINTS["data analyst"]
     if "data scientist" in title_lower:
         return ROLE_BLUEPRINTS["data scientist"]
     if "machine learning" in title_lower or "ai" in title_lower:
         return ROLE_BLUEPRINTS["ai & machine learning"]
-    if "devops" in title_lower or "cloud" in title_lower:
+    if "devops" in title_lower or "cloud" in title_lower or "sre" in title_lower or "site reliability" in title_lower:
         return ROLE_BLUEPRINTS["devops"]
     if "security" in title_lower or "cyber" in title_lower:
         return ROLE_BLUEPRINTS["cybersecurity"]

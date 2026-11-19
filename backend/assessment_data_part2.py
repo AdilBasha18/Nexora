@@ -89,7 +89,7 @@ PART2_DATA["modern-react-javascript-fundamentals"] = [
         "examples": [
             {"input": "arr = [1, 2, 3, 4, 5], size = 2", "output": "[[1, 2], [3, 4], [5]]", "explanation": "Split into chunks of 2 with remainder [5]."}
         ],
-        "starter_code": "function chunk(arr, size) {\n    // Write your solution below\n    const res = [];\n    for (let i = 0; i < arr.length; i += size) {\n        res.push(arr.slice(i, i + size));\n    }\n    return res;\n}\n",
+        "starter_code": "function chunk(arr, size) {\n    // Write your solution below\n},
         "sample_test_cases": [
             {"inputs": [[1, 2, 3, 4, 5], 2], "expected": [[1, 2], [3, 4], [5]]},
             {"inputs": [[1, 9, 6, 3, 2], 3], "expected": [[1, 9, 6], [3, 2]]}
@@ -115,7 +115,7 @@ PART2_DATA["modern-react-javascript-fundamentals"] = [
         "examples": [
             {"input": "obj = { a: 1, b: { c: 2 } }", "output": "{ a: 1, b: { c: 2 } }", "explanation": "Returns identical deep cloned structure."}
         ],
-        "starter_code": "function deepClone(obj) {\n    // Write your solution below\n    if (obj === null || typeof obj !== 'object') return obj;\n    if (Array.isArray(obj)) return obj.map(deepClone);\n    const copy = {};\n    for (const key in obj) {\n        if (Object.prototype.hasOwnProperty.call(obj, key)) {\n            copy[key] = deepClone(obj[key]);\n        }\n    }\n    return copy;\n}\n",
+        "starter_code": "function deepClone(obj) {\n    // Write your solution below\n},
         "sample_test_cases": [
             {"inputs": [{"a": 1, "b": {"c": 2}}], "expected": {"a": 1, "b": {"c": 2}}},
             {"inputs": [[1, [2, 3], {"x": 4}]], "expected": [1, [2, 3], {"x": 4}]}
@@ -141,7 +141,7 @@ PART2_DATA["modern-react-javascript-fundamentals"] = [
         "examples": [
             {"input": "arr = [0, 1, false, 2, '', 3, 'a']", "output": "[1, 2, 3, 'a']", "explanation": "0, false, and '' are removed."}
         ],
-        "starter_code": "function compact(arr) {\n    // Write your solution below\n    return arr.filter(Boolean);\n}\n",
+        "starter_code": "function compact(arr) {\n    // Write your solution below\n},
         "sample_test_cases": [
             {"inputs": [[0, 1, False, 2, "", 3, "a"]], "expected": [1, 2, 3, "a"]},
             {"inputs": [[None, 0, False, "hello"]], "expected": ["hello"]}
@@ -167,7 +167,7 @@ PART2_DATA["modern-react-javascript-fundamentals"] = [
         "examples": [
             {"input": "arr = [1, [2, [3, [4]], 5]], depth = 1", "output": "[1, 2, [3, [4]], 5]", "explanation": "Flattens one level of nesting."}
         ],
-        "starter_code": "function flattenDepth(arr, depth) {\n    // Write your solution below\n    if (depth <= 0) return arr.slice();\n    return arr.reduce((acc, val) => {\n        if (Array.isArray(val)) {\n            acc.push(...flattenDepth(val, depth - 1));\n        } else {\n            acc.push(val);\n        }\n        return acc;\n    }, []);\n}\n",
+        "starter_code": "function flattenDepth(arr, depth) {\n    // Write your solution below\n},
         "sample_test_cases": [
             {"inputs": [[1, [2, [3, [4]], 5]], 1], "expected": [1, 2, [3, [4]], 5]},
             {"inputs": [[1, [2, [3, [4]], 5]], 2], "expected": [1, 2, 3, [4], 5]}
@@ -192,7 +192,7 @@ PART2_DATA["modern-react-javascript-fundamentals"] = [
         "examples": [
             {"input": "multiply(3, 4)", "output": "12", "explanation": "3 * 4 = 12"}
         ],
-        "starter_code": "function createMemoizedMultiplier() {\n    const cache = {};\n    return function(a, b) {\n        const key = `${a},${b}`;\n        if (cache[key] !== undefined) return cache[key];\n        const res = a * b;\n        cache[key] = res;\n        return res;\n    };\n}\n\n// Solution entry point\nfunction solution(a, b) {\n    const fn = createMemoizedMultiplier();\n    return fn(a, b);\n}\n",
+        "starter_code": "function createMemoizedMultiplier() {\n    // Write your solution below\n},
         "sample_test_cases": [
             {"inputs": [6, 7], "expected": 42},
             {"inputs": [10, 0], "expected": 0}
@@ -291,7 +291,7 @@ PART2_DATA["data-structures-algorithms-core-concepts"] = [
         "examples": [
             {"input": "nums = [-1, 0, 3, 5, 9, 12], target = 9", "output": "4", "explanation": "9 exists in nums and its index is 4."}
         ],
-        "starter_code": "def binary_search(nums, target):\n    # Write your solution below\n    left, right = 0, len(nums) - 1\n    while left <= right:\n        mid = (left + right) // 2\n        if nums[mid] == target:\n            return mid\n        elif nums[mid] < target:\n            left = mid + 1\n        else:\n            right = mid - 1\n    return -1\n",
+        "starter_code": "def binary_search(nums, target):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[-1, 0, 3, 5, 9, 12], 9], "expected": 4},
             {"inputs": [[-1, 0, 3, 5, 9, 12], 2], "expected": -1}
@@ -318,7 +318,7 @@ PART2_DATA["data-structures-algorithms-core-concepts"] = [
             {"input": "s = '()[]{}'", "output": "True", "explanation": "All brackets matched in order."},
             {"input": "s = '(]'", "output": "False", "explanation": "Mismatched closing bracket."}
         ],
-        "starter_code": "def is_valid(s):\n    # Write your solution below\n    stack = []\n    mapping = {')': '(', '}': '{', ']': '['}\n    for char in s:\n        if char in mapping:\n            top = stack.pop() if stack else '#'\n            if mapping[char] != top:\n                return False\n        else:\n            stack.append(char)\n    return not stack\n",
+        "starter_code": "def is_valid(s):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": ["()[]{}"], "expected": True},
             {"inputs": ["(]"], "expected": False}
@@ -344,7 +344,7 @@ PART2_DATA["data-structures-algorithms-core-concepts"] = [
         "examples": [
             {"input": "nums = [-2, 1, -3, 4, -1, 2, 1, -5, 4]", "output": "6", "explanation": "The subarray [4, -1, 2, 1] has the largest sum 6."}
         ],
-        "starter_code": "def max_sub_array(nums):\n    # Write your solution below\n    max_sum = current_sum = nums[0]\n    for x in nums[1:]:\n        current_sum = max(x, current_sum + x)\n        max_sum = max(max_sum, current_sum)\n    return max_sum\n",
+        "starter_code": "def max_sub_array(nums):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[-2, 1, -3, 4, -1, 2, 1, -5, 4]], "expected": 6},
             {"inputs": [[1]], "expected": 1}
@@ -370,7 +370,7 @@ PART2_DATA["data-structures-algorithms-core-concepts"] = [
         "examples": [
             {"input": "a = [1, 3, 5], b = [2, 4, 6]", "output": "[1, 2, 3, 4, 5, 6]", "explanation": "Sorted combination."}
         ],
-        "starter_code": "def merge_sorted(a, b):\n    # Write your solution below\n    res = []\n    i = j = 0\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            res.append(a[i])\n            i += 1\n        else:\n            res.append(b[j])\n            j += 1\n    res.extend(a[i:])\n    res.extend(b[j:])\n    return res\n",
+        "starter_code": "def merge_sorted(a, b):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[1, 3, 5], [2, 4, 6]], "expected": [1, 2, 3, 4, 5, 6]},
             {"inputs": [[], [1]], "expected": [1]}
@@ -395,7 +395,7 @@ PART2_DATA["data-structures-algorithms-core-concepts"] = [
         "examples": [
             {"input": "s = 'abcabcbb'", "output": "3", "explanation": "The answer is 'abc', with length 3."}
         ],
-        "starter_code": "def length_of_longest_substring(s):\n    # Write your solution below\n    char_map = {}\n    left = 0\n    max_len = 0\n    for right, char in enumerate(s):\n        if char in char_map and char_map[char] >= left:\n            left = char_map[char] + 1\n        char_map[char] = right\n        max_len = max(max_len, right - left + 1)\n    return max_len\n",
+        "starter_code": "def length_of_longest_substring(s):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": ["abcabcbb"], "expected": 3},
             {"inputs": ["bbbbb"], "expected": 1}
@@ -494,7 +494,7 @@ PART2_DATA["data-science-ml-foundations"] = [
         "examples": [
             {"input": "data = [10, 20, 30]", "output": "[0.0, 0.5, 1.0]", "explanation": "(10-10)/20 = 0, (20-10)/20 = 0.5, (30-10)/20 = 1.0"}
         ],
-        "starter_code": "def min_max_scale(data):\n    # Write your solution below\n    mn, mx = min(data), max(data)\n    if mn == mx:\n        return [0.0] * len(data)\n    return [round((x - mn) / (mx - mn), 2) for x in data]\n",
+        "starter_code": "def min_max_scale(data):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[10, 20, 30]], "expected": [0.0, 0.5, 1.0]},
             {"inputs": [[5, 5, 5]], "expected": [0.0, 0.0, 0.0]}
@@ -519,7 +519,7 @@ PART2_DATA["data-science-ml-foundations"] = [
         "examples": [
             {"input": "y_true = [3, -0.5, 2, 7], y_pred = [2.5, 0.0, 2, 8]", "output": "0.38", "explanation": "Average squared difference is 0.375 -> rounded to 0.38"}
         ],
-        "starter_code": "def mean_squared_error(y_true, y_pred):\n    # Write your solution below\n    diffs = [(yt - yp) ** 2 for yt, yp in zip(y_true, y_pred)]\n    return round(sum(diffs) / len(diffs), 2)\n",
+        "starter_code": "def mean_squared_error(y_true, y_pred):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[3, -0.5, 2, 7], [2.5, 0.0, 2, 8]], "expected": 0.38},
             {"inputs": [[1, 2, 3], [1, 2, 3]], "expected": 0.0}
@@ -544,7 +544,7 @@ PART2_DATA["data-science-ml-foundations"] = [
         "examples": [
             {"input": "data = [10, -1, 30, -1]", "output": "[10.0, 20.0, 30.0, 20.0]", "explanation": "Mean of 10 and 30 is 20.0."}
         ],
-        "starter_code": "def impute_mean(data):\n    # Write your solution below\n    valid = [x for x in data if x != -1]\n    avg = round(sum(valid) / len(valid), 1) if valid else 0.0\n    return [round(float(x), 1) if x != -1 else avg for x in data]\n",
+        "starter_code": "def impute_mean(data):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[10, -1, 30, -1]], "expected": [10.0, 20.0, 30.0, 20.0]},
             {"inputs": [[5, 5]], "expected": [5.0, 5.0]}
@@ -594,7 +594,7 @@ PART2_DATA["data-science-ml-foundations"] = [
         "examples": [
             {"input": "y_true = [1, 1, 0, 0], y_pred = [1, 0, 0, 1]", "output": "[0.5, 0.5, 0.5]", "explanation": "TP=1, FP=1, FN=1."}
         ],
-        "starter_code": "def evaluate_metrics(y_true, y_pred):\n    # Write your solution below\n    tp = sum(1 for yt, yp in zip(y_true, y_pred) if yt == 1 and yp == 1)\n    fp = sum(1 for yt, yp in zip(y_true, y_pred) if yt == 0 and yp == 1)\n    fn = sum(1 for yt, yp in zip(y_true, y_pred) if yt == 1 and yp == 0)\n    prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0\n    rec = tp / (tp + fn) if (tp + fn) > 0 else 0.0\n    f1 = (2 * prec * rec) / (prec + rec) if (prec + rec) > 0 else 0.0\n    return [round(prec, 2), round(rec, 2), round(f1, 2)]\n",
+        "starter_code": "def evaluate_metrics(y_true, y_pred):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[1, 1, 0, 0], [1, 0, 0, 1]], "expected": [0.5, 0.5, 0.5]},
             {"inputs": [[1, 1, 1], [1, 1, 1]], "expected": [1.0, 1.0, 1.0]}
@@ -692,7 +692,7 @@ PART2_DATA["general-logical-aptitude-quantitative-reasoning"] = [
         "examples": [
             {"input": "n = 5", "output": "['1', '2', 'Fizz', '4', 'Buzz']", "explanation": "3 is Fizz, 5 is Buzz."}
         ],
-        "starter_code": "def fizz_buzz(n):\n    # Write your solution below\n    res = []\n    for i in range(1, n + 1):\n        if i % 15 == 0:\n            res.append('FizzBuzz')\n        elif i % 3 == 0:\n            res.append('Fizz')\n        elif i % 5 == 0:\n            res.append('Buzz')\n        else:\n            res.append(str(i))\n    return res\n",
+        "starter_code": "def fizz_buzz(n):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [5], "expected": ["1", "2", "Fizz", "4", "Buzz"]},
             {"inputs": [3], "expected": ["1", "2", "Fizz"]}
@@ -717,7 +717,7 @@ PART2_DATA["general-logical-aptitude-quantitative-reasoning"] = [
         "examples": [
             {"input": "s = 'LVIII'", "output": "58", "explanation": "L=50, V=5, III=3."}
         ],
-        "starter_code": "def roman_to_int(s):\n    # Write your solution below\n    vals = {'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}\n    total = 0\n    for i in range(len(s)):\n        if i + 1 < len(s) and vals[s[i]] < vals[s[i + 1]]:\n            total -= vals[s[i]]\n        else:\n            total += vals[s[i]]\n    return total\n",
+        "starter_code": "def roman_to_int(s):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": ["LVIII"], "expected": 58},
             {"inputs": ["MCMXCIV"], "expected": 1994}
@@ -743,7 +743,7 @@ PART2_DATA["general-logical-aptitude-quantitative-reasoning"] = [
         "examples": [
             {"input": "nums = [3, 0, 1]", "output": "2", "explanation": "2 is missing."}
         ],
-        "starter_code": "def missing_number(nums):\n    # Write your solution below\n    n = len(nums)\n    expected_sum = n * (n + 1) // 2\n    return expected_sum - sum(nums)\n",
+        "starter_code": "def missing_number(nums):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[3, 0, 1]], "expected": 2},
             {"inputs": [[0, 1]], "expected": 2}
@@ -768,7 +768,7 @@ PART2_DATA["general-logical-aptitude-quantitative-reasoning"] = [
         "examples": [
             {"input": "s = 'A man, a plan, a canal: Panama'", "output": "True", "explanation": "'amanaplanacanalpanama' is a palindrome."}
         ],
-        "starter_code": "def is_palindrome(s):\n    # Write your solution below\n    clean = [c.lower() for c in s if c.isalnum()]\n    return clean == clean[::-1]\n",
+        "starter_code": "def is_palindrome(s):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": ["A man, a plan, a canal: Panama"], "expected": True},
             {"inputs": ["race a car"], "expected": False}
@@ -793,7 +793,7 @@ PART2_DATA["general-logical-aptitude-quantitative-reasoning"] = [
         "examples": [
             {"input": "n = 12", "output": "[2, 3]", "explanation": "Prime factors are 2 and 3."}
         ],
-        "starter_code": "def prime_factors(n):\n    # Write your solution below\n    factors = set()\n    d = 2\n    while d * d <= n:\n        while n % d == 0:\n            factors.add(d)\n            n //= d\n        d += 1\n    if n > 1:\n        factors.add(n)\n    return sorted(list(factors))\n",
+        "starter_code": "def prime_factors(n):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [12], "expected": [2, 3]},
             {"inputs": [13], "expected": [13]}
@@ -891,7 +891,7 @@ PART2_DATA["python-coding-challenges-bug-hunting"] = [
         "examples": [
             {"input": "nums = [1, 2, 3, 1]", "output": "True", "explanation": "1 appears at index 0 and 3."}
         ],
-        "starter_code": "def contains_duplicate(nums):\n    # Write your solution below\n    return len(nums) != len(set(nums))\n",
+        "starter_code": "def contains_duplicate(nums):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[1, 2, 3, 1]], "expected": True},
             {"inputs": [[1, 2, 3, 4]], "expected": False}
@@ -916,7 +916,7 @@ PART2_DATA["python-coding-challenges-bug-hunting"] = [
         "examples": [
             {"input": "nums = [5, 7, 7, 8, 8, 10], target = 8", "output": "[3, 4]", "explanation": "8 spans index 3 to 4."}
         ],
-        "starter_code": "def search_range(nums, target):\n    # Write your solution below\n    def find_bound(is_first):\n        l, r = 0, len(nums) - 1\n        ans = -1\n        while l <= r:\n            mid = (l + r) // 2\n            if nums[mid] == target:\n                ans = mid\n                if is_first:\n                    r = mid - 1\n                else:\n                    l = mid + 1\n            elif nums[mid] < target:\n                l = mid + 1\n            else:\n                r = mid - 1\n        return ans\n    return [find_bound(True), find_bound(False)]\n",
+        "starter_code": "def search_range(nums, target):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[5, 7, 7, 8, 8, 10], 8], "expected": [3, 4]},
             {"inputs": [[5, 7, 7, 8, 8, 10], 6], "expected": [-1, -1]}
@@ -991,7 +991,7 @@ PART2_DATA["python-coding-challenges-bug-hunting"] = [
         "examples": [
             {"input": "nums = [1, 2, 3, 1]", "output": "2", "explanation": "Index 2 is 3, greater than 2 and 1."}
         ],
-        "starter_code": "def find_peak_element(nums):\n    # Write your solution below\n    l, r = 0, len(nums) - 1\n    while l < r:\n        mid = (l + r) // 2\n        if nums[mid] > nums[mid + 1]:\n            r = mid\n        else:\n            l = mid + 1\n    return l\n",
+        "starter_code": "def find_peak_element(nums):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[1, 2, 3, 1]], "expected": 2},
             {"inputs": [[1, 2, 1, 3, 5, 6, 4]], "expected": 5}
@@ -1113,7 +1113,7 @@ PART2_DATA["generative-ai-llm-systems-engineering"] = [
         "examples": [
             {"input": "text = 'one two three four five', chunk_size = 3, overlap = 1", "output": "['one two three', 'three four five']", "explanation": "'three' overlaps into chunk 2."}
         ],
-        "starter_code": "def chunk_words(text, chunk_size, overlap):\n    # Write your solution below\n    words = text.split()\n    if not words:\n        return []\n    step = chunk_size - overlap\n    chunks = []\n    for i in range(0, len(words), step):\n        ch = words[i:i + chunk_size]\n        if ch:\n            chunks.append(' '.join(ch))\n        if i + chunk_size >= len(words):\n            break\n    return chunks\n",
+        "starter_code": "def chunk_words(text, chunk_size, overlap):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": ["one two three four five", 3, 1], "expected": ["one two three", "three four five"]},
             {"inputs": ["a b c d", 2, 0], "expected": ["a b", "c d"]}
@@ -1163,7 +1163,7 @@ PART2_DATA["generative-ai-llm-systems-engineering"] = [
         "examples": [
             {"input": "logits = [0.1, 0.9, 0.4, 0.8], k = 2", "output": "[1, 3]", "explanation": "0.9 (idx 1) and 0.8 (idx 3) are top 2."}
         ],
-        "starter_code": "def top_k_indices(logits, k):\n    # Write your solution below\n    indexed = list(enumerate(logits))\n    indexed.sort(key=lambda x: x[1], reverse=True)\n    return [idx for idx, val in indexed[:k]]\n",
+        "starter_code": "def top_k_indices(logits, k):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[0.1, 0.9, 0.4, 0.8], 2], "expected": [1, 3]},
             {"inputs": [[5.0, 10.0, 2.0], 1], "expected": [1]}
@@ -1286,7 +1286,7 @@ PART2_DATA["cloud-infrastructure-docker-mastery"] = [
         "examples": [
             {"input": "img_str = 'nginx:1.21'", "output": "{'registry': 'docker.io', 'repository': 'nginx', 'tag': '1.21'}", "explanation": "Default registry with explicit tag."}
         ],
-        "starter_code": "def parse_image_tag(img_str):\n    # Write your solution below\n    tag = 'latest'\n    if ':' in img_str.split('/')[-1]:\n        parts = img_str.rsplit(':', 1)\n        img_str = parts[0]\n        tag = parts[1]\n    \n    slash_parts = img_str.split('/')\n    if len(slash_parts) > 1 and ('.' in slash_parts[0] or ':' in slash_parts[0] or slash_parts[0] == 'localhost'):\n        registry = slash_parts[0]\n        repo = '/'.join(slash_parts[1:])\n    else:\n        registry = 'docker.io'\n        repo = img_str\n        \n    return {'registry': registry, 'repository': repo, 'tag': tag}\n",
+        "starter_code": "def parse_image_tag(img_str):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": ["nginx:1.21"], "expected": {"registry": "docker.io", "repository": "nginx", "tag": "1.21"}},
             {"inputs": ["ghcr.io/org/backend"], "expected": {"registry": "ghcr.io", "repository": "org/backend", "tag": "latest"}}
@@ -1312,7 +1312,7 @@ PART2_DATA["cloud-infrastructure-docker-mastery"] = [
             {"input": "cidr = '10.0.0.0/16'", "output": "True", "explanation": "Valid prefix and octets."},
             {"input": "cidr = '10.0.0.256/24'", "output": "False", "explanation": "256 exceeds valid octet."}
         ],
-        "starter_code": "def is_valid_cidr(cidr):\n    # Write your solution below\n    if '/' not in cidr:\n        return False\n    parts = cidr.split('/')\n    if len(parts) != 2:\n        return False\n    ip_str, mask_str = parts\n    if not mask_str.isdigit():\n        return False\n    mask = int(mask_str)\n    if not (0 <= mask <= 32):\n        return False\n    octets = ip_str.split('.')\n    if len(octets) != 4:\n        return False\n    for octet in octets:\n        if not octet.isdigit() or not (0 <= int(octet) <= 255):\n            return False\n        if len(octet) > 1 and octet.startswith('0'):\n            return False\n    return True\n",
+        "starter_code": "def is_valid_cidr(cidr):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": ["10.0.0.0/16"], "expected": True},
             {"inputs": ["10.0.0.256/24"], "expected": False}
@@ -1338,7 +1338,7 @@ PART2_DATA["cloud-infrastructure-docker-mastery"] = [
         "examples": [
             {"input": "services = [{'service': 'api', 'status': 'up', 'latency_ms': 50}, {'service': 'db', 'status': 'down', 'latency_ms': 150}]", "output": "{'healthy_count': 1, 'unhealthy_count': 1, 'avg_latency_ms': 100.0}", "explanation": "1 up, 1 down, average latency 100.0."}
         ],
-        "starter_code": "def aggregate_health(services):\n    # Write your solution below\n    healthy = sum(1 for s in services if s.get('status') == 'up')\n    unhealthy = len(services) - healthy\n    latencies = [s.get('latency_ms', 0) for s in services]\n    avg_lat = round(sum(latencies) / len(latencies), 1) if latencies else 0.0\n    return {'healthy_count': healthy, 'unhealthy_count': unhealthy, 'avg_latency_ms': avg_lat}\n",
+        "starter_code": "def aggregate_health(services):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[{"service": "api", "status": "up", "latency_ms": 50}, {"service": "db", "status": "down", "latency_ms": 150}]], "expected": {"healthy_count": 1, "unhealthy_count": 1, "avg_latency_ms": 100.0}},
             {"inputs": [[{"service": "web", "status": "up", "latency_ms": 20}]], "expected": {"healthy_count": 1, "unhealthy_count": 0, "avg_latency_ms": 20.0}}
@@ -1362,7 +1362,7 @@ PART2_DATA["cloud-infrastructure-docker-mastery"] = [
         "examples": [
             {"input": "flat = {'app.name': 'Nexora', 'app.version': 1}", "output": "{'app': {'name': 'Nexora', 'version': 1}}", "explanation": "Nested under 'app'."}
         ],
-        "starter_code": "def unflatten_config(flat_dict):\n    # Write your solution below\n    nested = {}\n    for key, value in flat_dict.items():\n        parts = key.split('.')\n        curr = nested\n        for p in parts[:-1]:\n            if p not in curr:\n                curr[p] = {}\n            curr = curr[p]\n        curr[parts[-1]] = value\n    return nested\n",
+        "starter_code": "def unflatten_config(flat_dict):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [{"app.name": "Nexora", "app.version": 1}], "expected": {"app": {"name": "Nexora", "version": 1}}},
             {"inputs": [{"port": 3000}], "expected": {"port": 3000}}
@@ -1387,7 +1387,7 @@ PART2_DATA["cloud-infrastructure-docker-mastery"] = [
         "examples": [
             {"input": "expr = '*/20'", "output": "[0, 20, 40]", "explanation": "0, 20, 40 are <= 59."}
         ],
-        "starter_code": "def parse_cron_minutes(expr):\n    # Write your solution below\n    if expr == '*':\n        return list(range(60))\n    if expr.startswith('*/'):\n        step = int(expr[2:])\n        return list(range(0, 60, step))\n    if ',' in expr:\n        return sorted([int(x) for x in expr.split(',')])\n    return [int(expr)]\n",
+        "starter_code": "def parse_cron_minutes(expr):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": ["*/20"], "expected": [0, 20, 40]},
             {"inputs": ["5,10"], "expected": [5, 10]}

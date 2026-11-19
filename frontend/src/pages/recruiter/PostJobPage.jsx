@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { 
   PlusCircle, 
   ShieldCheck, 
   AlertTriangle, 
   Check, 
   ArrowRight,
-  Briefcase
+  Briefcase,
+  Clock,
+  Info
 } from 'lucide-react';
 
 export default function PostJobPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isApproved = user?.recruiter_status === 'APPROVED' || user?.role === 'ADMIN';
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -22,10 +27,10 @@ export default function PostJobPage() {
   const [minExpYears, setMinExpYears] = useState(2.0);
   const [employmentType, setEmploymentType] = useState('FULL_TIME');
   const [workMode, setWorkMode] = useState('REMOTE');
-  const [location, setLocation] = useState('Remote (US)');
-  const [salaryMin, setSalaryMin] = useState(90000);
-  const [salaryMax, setSalaryMax] = useState(130000);
-  const [statusVal, setStatusVal] = useState('PUBLISHED');
+  const [location, setLocation] = useState('Remote');
+  const [salaryMin, setSalaryMin] = useState(600000);
+  const [salaryMax, setSalaryMax] = useState(1200000);
+  const [statusVal, setStatusVal] = useState('PENDING_REVIEW');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -86,6 +91,22 @@ export default function PostJobPage() {
           Specify exact required and preferred skills to receive accurately scored candidate matches.
         </p>
       </div>
+
+      {!isApproved && (
+        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start space-x-3">
+          <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <span className="font-bold block">Account Approval Pending</span>
+            <p className="text-amber-800 leading-relaxed">
+              Your recruiter account is currently awaiting administrative approval ({user?.recruiter_status || 'PENDING'}). 
+              You can prepare and save job drafts, but vacancies cannot be submitted for publishing until your profile is approved.
+            </p>
+            <Link to="/recruiter/company" className="text-teal-700 underline font-semibold inline-block pt-1">
+              Complete Company Profile & Verification &rarr;
+            </Link>
+          </div>
+        </div>
+      )}
 
       {hasScamWarning && (
         <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start space-x-3">
@@ -172,25 +193,29 @@ export default function PostJobPage() {
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Salary Range Min ($)</label>
+            <label className="block font-semibold text-slate-700 mb-1">Salary Range Min (₹ INR)</label>
             <input
               type="number"
-              step="5000"
+              step="25000"
               value={salaryMin}
+              placeholder="e.g. 600000"
               onChange={(e) => setSalaryMin(e.target.value)}
               className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none"
             />
+            <p className="text-[11px] text-slate-500 mt-1">₹{Number(salaryMin || 0).toLocaleString('en-IN')} / annum</p>
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Salary Range Max ($)</label>
+            <label className="block font-semibold text-slate-700 mb-1">Salary Range Max (₹ INR)</label>
             <input
               type="number"
-              step="5000"
+              step="25000"
               value={salaryMax}
+              placeholder="e.g. 1200000"
               onChange={(e) => setSalaryMax(e.target.value)}
               className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none"
             />
+            <p className="text-[11px] text-slate-500 mt-1">₹{Number(salaryMax || 0).toLocaleString('en-IN')} / annum</p>
           </div>
         </div>
 
@@ -252,25 +277,32 @@ export default function PostJobPage() {
           </div>
         </div>
 
-        <div className="pt-4 flex items-center justify-between border-t border-slate-100">
+        <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-2xl flex items-start space-x-3 text-xs text-blue-900">
+          <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+          <p>
+            <strong>Job Review Policy:</strong> All job postings submitted for publishing enter <strong>Pending Review</strong>. Once verified by an administrator, the posting will instantly appear on the public job board and candidate skill matching algorithms.
+          </p>
+        </div>
+
+        <div className="pt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-t border-slate-100">
           <div className="flex items-center space-x-2">
-            <span className="font-semibold text-slate-700">Initial Status:</span>
+            <span className="font-semibold text-slate-700">Action:</span>
             <select
               value={statusVal}
               onChange={(e) => setStatusVal(e.target.value)}
-              className="p-1.5 rounded-lg border border-slate-200 font-bold text-xs"
+              className="p-2 rounded-xl border border-slate-200 font-bold text-xs bg-slate-50 focus:bg-white outline-none"
             >
-              <option value="PUBLISHED">Published (Visible on Board)</option>
-              <option value="DRAFT">Draft (Internal Only)</option>
+              <option value="PENDING_REVIEW">Submit for Review (Pending Admin Approval)</option>
+              <option value="DRAFT">Save as Draft (Private)</option>
             </select>
           </div>
 
           <button
             type="submit"
-            disabled={loading}
-            className="px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md transition disabled:opacity-50"
+            disabled={loading || (!isApproved && statusVal !== 'DRAFT')}
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Publishing...' : 'Publish Vacancy'}
+            {loading ? 'Submitting...' : (!isApproved && statusVal !== 'DRAFT') ? 'Approval Required to Submit' : statusVal === 'DRAFT' ? 'Save Draft' : 'Submit for Review'}
           </button>
         </div>
 

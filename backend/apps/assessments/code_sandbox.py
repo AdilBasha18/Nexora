@@ -190,9 +190,14 @@ def execute_python_code(user_code: str, test_cases: list, function_name: str = "
 
     formatted_tcs = []
     for tc in test_cases:
+        raw_inp = tc.get("inputs")
+        if raw_inp is None:
+            raw_inp = tc.get("input", [])
+        if not isinstance(raw_inp, list):
+            raw_inp = [raw_inp] if raw_inp is not None else []
         formatted_tcs.append({
             "function_name": function_name,
-            "input_args": tc.get("inputs", []),
+            "input_args": raw_inp,
             "expected_output": tc.get("expected")
         })
 
@@ -320,9 +325,14 @@ def execute_javascript_code(user_code: str, test_cases: list, function_name: str
 
     formatted_tcs = []
     for tc in test_cases:
+        raw_inp = tc.get("inputs")
+        if raw_inp is None:
+            raw_inp = tc.get("input", [])
+        if not isinstance(raw_inp, list):
+            raw_inp = [raw_inp] if raw_inp is not None else []
         formatted_tcs.append({
             "function_name": function_name,
-            "input_args": tc.get("inputs", []),
+            "input_args": raw_inp,
             "expected_output": tc.get("expected")
         })
 
@@ -572,12 +582,204 @@ def execute_sql_code(user_code: str, test_cases: list) -> dict:
         "error": None
     }
 
+def format_java_arg(arg):
+    if arg is None:
+        return "null"
+    if isinstance(arg, bool):
+        return "true" if arg else "false"
+    if isinstance(arg, int):
+        return str(arg)
+    if isinstance(arg, float):
+        return f"{arg}d"
+    if isinstance(arg, str):
+        clean = arg.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
+        return f'"{clean}"'
+    if isinstance(arg, list):
+        if len(arg) == 0:
+            return "new int[]{}"
+        if all(isinstance(x, int) for x in arg):
+            return f"new int[]{{{', '.join(str(x) for x in arg)}}}"
+        if all(isinstance(x, str) for x in arg):
+            return f"new String[]{{{', '.join(json.dumps(x) for x in arg)}}}"
+    return json.dumps(arg)
+
+def execute_java_code(user_code: str, test_cases: list, function_name: str = "solution") -> dict:
+    """
+    Executes Java user code in an isolated JDK 17 sandbox against test cases using Judge0.
+    """
+    import urllib.request
+    
+    if not user_code or not user_code.strip():
+        return {
+            "success": False,
+            "error": "No Java code provided.",
+            "tests": [],
+            "test_results": [],
+            "all_passed": False,
+            "elapsed_ms": 0
+        }
+
+    # Clean user code: if they declare public class Solution, strip 'public ' so it compiles alongside public class Main
+    clean_code = re.sub(r'\bpublic\s+class\s+', 'class ', user_code)
+
+    # Wrap in class Solution if no class definition present
+    if "class Solution" not in clean_code and "class " not in clean_code:
+        clean_code = f"class Solution {{\n{clean_code}\n}}"
+
+    class_match = re.search(r'\bclass\s+([A-Za-z0-9_]+)', clean_code)
+    target_class = class_match.group(1) if class_match else "Solution"
+
+    marker = f"NX_JAVA_RES_{uuid.uuid4().hex[:8]}"
+
+    runner_body = []
+    for idx, tc in enumerate(test_cases):
+        raw_inp = tc.get("inputs")
+        if raw_inp is None:
+            raw_inp = tc.get("input", [])
+        inp_args = raw_inp if isinstance(raw_inp, list) else [raw_inp] if raw_inp is not None else []
+        expected = tc.get("expected")
+        java_args = ", ".join(format_java_arg(a) for a in inp_args)
+        expected_repr = format_java_arg(expected)
+        t_idx = idx + 1
+
+        runner_body.append(f"""
+        try {{
+            {target_class} _inst = new {target_class}();
+            Object actualObj = _inst.{function_name}({java_args});
+            Object expectedObj = {expected_repr};
+            String actualStr = actualObj != null && actualObj.getClass().isArray() ? 
+                (actualObj instanceof int[] ? Arrays.toString((int[]) actualObj) : Arrays.deepToString((Object[]) actualObj)) : 
+                String.valueOf(actualObj);
+            String expectedStr = expectedObj != null && expectedObj.getClass().isArray() ? 
+                (expectedObj instanceof int[] ? Arrays.toString((int[]) expectedObj) : Arrays.deepToString((Object[]) expectedObj)) : 
+                String.valueOf(expectedObj);
+            
+            boolean passed = false;
+            if (actualObj instanceof int[] && expectedObj instanceof int[]) {{
+                passed = Arrays.equals((int[]) actualObj, (int[]) expectedObj);
+            }} else if (actualObj instanceof Object[] && expectedObj instanceof Object[]) {{
+                passed = Arrays.deepEquals((Object[]) actualObj, (Object[]) expectedObj);
+            }} else {{
+                passed = Objects.equals(actualStr, expectedStr);
+            }}
+            if (!passed) allPassed = false;
+            testsList.add(String.format("{{\\"test_index\\": %d, \\"passed\\": %b, \\"actual\\": %s, \\"expected\\": %s, \\"error\\": null}}", 
+                {t_idx}, passed, escapeJson(actualStr), escapeJson(expectedStr)));
+        }} catch (Throwable t) {{
+            allPassed = false;
+            String errMsg = t.getClass().getSimpleName() + ": " + (t.getMessage() != null ? t.getMessage() : "Exception");
+            testsList.add(String.format("{{\\"test_index\\": %d, \\"passed\\": false, \\"actual\\": null, \\"expected\\": %s, \\"error\\": %s}}",
+                {t_idx}, escapeJson(String.valueOf({expected_repr})), escapeJson(errMsg)));
+        }}
+        """)
+
+    full_source = f"""
+import java.util.*;
+import java.io.*;
+
+{clean_code}
+
+public class Main {{
+    private static String escapeJson(String s) {{
+        if (s == null) return "null";
+        return "\\"" + s.replace("\\\\", "\\\\\\\\").replace("\\"", "\\\\\\"").replace("\\n", "\\\\n") + "\\"";
+    }}
+
+    public static void main(String[] args) {{
+        String marker = "{marker}";
+        boolean allPassed = true;
+        List<String> testsList = new ArrayList<>();
+
+        {''.join(runner_body)}
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(marker);
+        sb.append("{{\\"all_passed\\": ").append(allPassed).append(", \\"tests\\": [");
+        for (int i = 0; i < testsList.size(); i++) {{
+            if (i > 0) sb.append(", ");
+            sb.append(testsList.get(i));
+        }}
+        sb.append("]}}");
+        System.out.println(sb.toString());
+    }}
+}}
+"""
+
+    payload = {
+        'language_id': 91, # Java (JDK 17.0.6)
+        'source_code': full_source,
+        'stdin': ''
+    }
+
+    start_time = time.time()
+    try:
+        req = urllib.request.Request(
+            'https://ce.judge0.com/submissions?base64_encoded=false&wait=true',
+            data=json.dumps(payload).encode('utf-8'),
+            headers={'Content-Type': 'application/json', 'User-Agent': 'NexoraApp/1.0'}
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            exec_res = json.loads(resp.read().decode())
+
+        elapsed_ms = int((time.time() - start_time) * 1000)
+        stdout = exec_res.get('stdout') or ''
+        stderr = exec_res.get('stderr') or ''
+        compile_output = exec_res.get('compile_output') or ''
+        status_info = exec_res.get('status', {})
+
+        if compile_output:
+            return {
+                "success": False,
+                "all_passed": False,
+                "tests": [],
+                "test_results": [],
+                "error": f"Java Compilation Error:\n{compile_output.strip()}",
+                "elapsed_ms": elapsed_ms
+            }
+
+        if marker in stdout:
+            parts = stdout.split(marker)
+            logs = parts[0].strip()
+            res_json = json.loads(parts[1].strip())
+            tests = res_json.get("tests", [])
+            return {
+                "success": True,
+                "all_passed": res_json.get("all_passed", False),
+                "tests": tests,
+                "test_results": tests,
+                "output": logs,
+                "logs": logs,
+                "elapsed_ms": elapsed_ms,
+                "error": None
+            }
+        else:
+            return {
+                "success": False,
+                "all_passed": False,
+                "tests": [],
+                "test_results": [],
+                "error": stderr.strip() or stdout.strip() or f"Execution failed: {status_info.get('description', 'Unknown error')}",
+                "elapsed_ms": elapsed_ms
+            }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "all_passed": False,
+            "tests": [],
+            "test_results": [],
+            "error": f"Java sandbox error: {str(e)}",
+            "elapsed_ms": int((time.time() - start_time) * 1000)
+        }
+
 def execute_code(language: str, user_code: str, test_cases: list, function_name: str = "solution") -> dict:
     """
-    Unified execution dispatcher supporting Python, JavaScript, and SQL.
+    Unified execution dispatcher supporting Python, Java, JavaScript, and SQL.
     """
     lang = (language or "python").lower().strip()
-    if lang in ["javascript", "js", "node"]:
+    if lang in ["java"]:
+        return execute_java_code(user_code, test_cases, function_name)
+    elif lang in ["javascript", "js", "node"]:
         return execute_javascript_code(user_code, test_cases, function_name)
     elif lang in ["sql", "sqlite", "sqlite3"]:
         return execute_sql_code(user_code, test_cases)

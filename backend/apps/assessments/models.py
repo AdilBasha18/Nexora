@@ -26,7 +26,7 @@ class Assessment(models.Model):
     title = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     description = models.TextField()
-    duration_minutes = models.PositiveIntegerField(default=15)
+    duration_minutes = models.PositiveIntegerField(default=60)
     passing_score = models.PositiveIntegerField(default=70) # percentage
     difficulty = models.CharField(max_length=20, choices=Difficulty.choices, default=Difficulty.INTERMEDIATE)
     is_active = models.BooleanField(default=True)
@@ -62,10 +62,12 @@ class Question(models.Model):
     language = models.CharField(max_length=50, default='python')
     options = models.JSONField(default=list, blank=True)  # list of strings: ["Option A", "Option B", ...]
     correct_option_index = models.PositiveSmallIntegerField(default=0)  # for MCQ
-    starter_code = models.TextField(blank=True, default='')  # for Code challenges
+    starter_code = models.TextField(blank=True, default='')  # for Code challenges (Python)
+    starter_code_java = models.TextField(blank=True, default='')  # for Code challenges (Java)
     sample_test_cases = models.JSONField(default=list, blank=True)  # visible sample tests: [{"inputs": [...], "expected": ...}]
     test_cases = models.JSONField(default=list, blank=True)  # full evaluation tests: [{"inputs": [...], "expected": ...}]
     function_name = models.CharField(max_length=100, default='solution')
+    function_name_java = models.CharField(max_length=100, default='solution', blank=True)
     explanation = models.TextField(blank=True)
     order = models.PositiveIntegerField(default=1)
 

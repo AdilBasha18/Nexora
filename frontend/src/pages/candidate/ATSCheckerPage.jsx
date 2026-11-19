@@ -12,22 +12,28 @@ import {
   RefreshCw, 
   ArrowRight, 
   Search, 
-  ShieldCheck,
-  ChevronDown,
-  Briefcase,
-  AlertCircle,
-  Target,
-  TrendingUp,
-  Zap,
-  Copy,
-  Check,
-  Download,
-  Edit3,
-  Bot,
-  X,
-  Layers,
-  FileCheck,
-  ExternalLink
+  ShieldCheck, 
+  ChevronDown, 
+  Briefcase, 
+  AlertCircle, 
+  Target, 
+  TrendingUp, 
+  Zap, 
+  Copy, 
+  Check, 
+  Download, 
+  Edit3, 
+  Bot, 
+  X, 
+  Layers, 
+  FileCheck, 
+  ExternalLink,
+  Save,
+  Undo2,
+  CheckCheck,
+  Eye,
+  Sliders,
+  HelpCircle
 } from 'lucide-react';
 
 export default function ATSCheckerPage() {
@@ -66,7 +72,13 @@ export default function ATSCheckerPage() {
   const [studioOpen, setStudioOpen] = useState(false);
   const [improving, setImproving] = useState(false);
   const [improvementData, setImprovementData] = useState(null);
-  const [editableDraft, setEditableDraft] = useState('');
+  const [sectionsState, setSectionsState] = useState([]); // Array of section objects
+  const [editableFullDraft, setEditableFullDraft] = useState('');
+  const [studioTab, setStudioTab] = useState('sections'); // 'sections' | 'preview' | 'reevaluate'
+  const [reEvaluating, setReEvaluating] = useState(false);
+  const [reEvaluatedResult, setReEvaluatedResult] = useState(null);
+  const [savingToProfile, setSavingToProfile] = useState(false);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
@@ -75,7 +87,7 @@ export default function ATSCheckerPage() {
       try {
         if (isAuthenticated && isCandidate) {
           const resData = await api.getResumes();
-          const list = resData.results || resData;
+          const list = resData.results || resData || [];
           setResumes(list);
           const primary = list.find(r => r.is_primary);
           if (primary) {
@@ -87,7 +99,7 @@ export default function ATSCheckerPage() {
 
         // Load 25+ target role presets
         const presets = await api.getATSPresets();
-        setTargetRoles(presets);
+        setTargetRoles(presets || []);
       } catch (e) {
         console.error("Error loading presets or resumes:", e);
       }
@@ -126,10 +138,11 @@ export default function ATSCheckerPage() {
     setSelectedFile(file);
   };
 
-  // Step 1: Independent Analysis
+  // Run ATS / Resume Quality Analysis
   const handleRunAnalysis = async (includeJob = false) => {
     setError('');
     setResult(null);
+    setReEvaluatedResult(null);
 
     if (inputMode === 'upload' && !selectedFile) {
       setError('Please upload a PDF or DOCX resume to analyze.');
@@ -145,7 +158,7 @@ export default function ATSCheckerPage() {
     }
 
     setAnalyzing(true);
-    setStatusMessage(includeJob ? 'Evaluating resume against job requirements...' : 'Analyzing formatting, sections, and technical skills...');
+    setStatusMessage(includeJob ? 'Evaluating resume against job requirements...' : 'Analyzing document structure, sections, and technical skills...');
 
     try {
       let response;
@@ -170,23 +183,25 @@ export default function ATSCheckerPage() {
       setResult(response);
     } catch (err) {
       console.error(err);
-      setError(err?.data?.error || 'Failed to analyze resume. Please verify the file format and try again.');
+      setError(err?.data?.error || 'Failed to analyze resume. Please verify the file is text-readable and try again.');
     } finally {
       setAnalyzing(false);
       setStatusMessage('');
     }
   };
 
-  // Step 3: Open Resume Improvement Studio
+  // Open Resume Improvement Studio
   const handleOpenImprovementStudio = async () => {
     if (!result) return;
     setStudioOpen(true);
     setImproving(true);
     setCopied(false);
+    setSaveSuccessMsg('');
+    setStudioTab('sections');
 
     try {
-      const resumeContent = result.extracted_text || manualText || "Software developer with hands-on technical experience.";
-      const targetRoleName = selectedRole?.title || result.job_title || "Full Stack Developer";
+      const resumeContent = result.extracted_text || manualText || "";
+      const targetRoleName = selectedRole?.title || result.job_title || "Software Professional";
       const missingSkills = result.missing_skills || [];
 
       const improvement = await api.improveResume({
@@ -196,7 +211,14 @@ export default function ATSCheckerPage() {
       });
 
       setImprovementData(improvement);
-      setEditableDraft(improvement.full_draft);
+      // Initialize sections state
+      const initializedSections = (improvement.sections || []).map(sec => ({
+        ...sec,
+        currentContent: sec.suggested || sec.original,
+        decision: 'accepted' // 'accepted' | 'original' | 'custom'
+      }));
+      setSectionsState(initializedSections);
+      setEditableFullDraft(improvement.full_draft || '');
     } catch (err) {
       console.error("Error generating improvements:", err);
     } finally {
@@ -204,25 +226,110 @@ export default function ATSCheckerPage() {
     }
   };
 
-  // Download improved resume
+  // Section Action: Accept Suggested
+  const handleAcceptSection = (secId) => {
+    setSectionsState(prev => prev.map(sec => {
+      if (sec.id === secId) {
+        return { ...sec, currentContent: sec.suggested, decision: 'accepted' };
+      }
+      return sec;
+    }));
+  };
+
+  // Section Action: Keep Original
+  const handleRejectSection = (secId) => {
+    setSectionsState(prev => prev.map(sec => {
+      if (sec.id === secId) {
+        return { ...sec, currentContent: sec.original, decision: 'original' };
+      }
+      return sec;
+    }));
+  };
+
+  // Section Action: Inline Edit
+  const handleEditSectionContent = (secId, newText) => {
+    setSectionsState(prev => prev.map(sec => {
+      if (sec.id === secId) {
+        return { ...sec, currentContent: newText, decision: 'custom' };
+      }
+      return sec;
+    }));
+  };
+
+  // Assemble full draft from individual section states
+  const getAssembledDraft = () => {
+    if (sectionsState.length === 0) return editableFullDraft;
+    const name = improvementData?.candidate_info?.name?.toUpperCase() || "CANDIDATE";
+    const contact = Object.values(improvementData?.candidate_info || {})
+      .filter(v => v && v !== name)
+      .join(" | ");
+
+    let doc = `${name}\n${contact}\n\n`;
+    sectionsState.forEach(sec => {
+      doc += `${sec.title.toUpperCase()}\n${'-'.repeat(30)}\n${sec.currentContent}\n\n`;
+    });
+    return doc.trim();
+  };
+
+  // Re-evaluate Revised Resume (CHUNK 4: Transparent, real calculation)
+  const handleReEvaluateResume = async () => {
+    setReEvaluating(true);
+    const textToScore = getAssembledDraft();
+    try {
+      const res = await api.reEvaluateRevisedResume({
+        revised_text: textToScore,
+        job_title: selectedRole?.title || result?.job_title || '',
+        job_description: customJobDescription || selectedRole?.description || ''
+      });
+      setReEvaluatedResult(res);
+    } catch (err) {
+      alert("Failed to re-evaluate revised resume.");
+    } finally {
+      setReEvaluating(false);
+    }
+  };
+
+  // Save Improved Resume to Profile
+  const handleSaveToProfile = async () => {
+    setSavingToProfile(true);
+    setSaveSuccessMsg('');
+    const content = getAssembledDraft();
+    const roleName = selectedRole?.title || result?.job_title || 'Software';
+
+    try {
+      const res = await api.saveImprovedToResumes({
+        content: content,
+        title: `Optimized Resume - ${roleName}`,
+        target_role: roleName
+      });
+      setSaveSuccessMsg('Changes saved successfully to your resume data! Your improvements are preserved.');
+    } catch (err) {
+      alert("Error saving resume changes.");
+    } finally {
+      setSavingToProfile(false);
+    }
+  };
+
+  // Download improved resume (.docx or .txt)
   const handleDownload = async (format) => {
     setDownloading(true);
+    const content = getAssembledDraft();
     try {
       const blob = await api.downloadImprovedResume({
-        content: editableDraft || improvementData?.full_draft,
+        content: content,
         format: format
       });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Improved_Resume_${selectedRole?.title?.replace(/\s+/g, '_') || 'Nexora'}.${format}`;
+      a.download = `ATS_Optimized_Resume_${selectedRole?.title?.replace(/\s+/g, '_') || 'Nexora'}.${format}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (err) {
       console.error(err);
-      alert("Failed to download improved resume. Please copy the text directly.");
+      alert("Failed to download resume. You can copy the text directly.");
     } finally {
       setDownloading(false);
     }
@@ -235,36 +342,36 @@ export default function ATSCheckerPage() {
   );
 
   return (
-    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8 font-sans">
       
       {/* Top Header */}
       <div>
-        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-semibold mb-2">
-          <ShieldCheck className="w-3.5 h-3.5" />
-          <span>Professional ATS Resume Checker</span>
+        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-200 text-xs font-bold mb-2">
+          <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+          <span>Evidence-Based ATS Resume Evaluation</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-tight">
-          Applicant Tracking System (ATS) Resume Checker
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          ATS Resume Checker & Quality Evaluator
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-3xl">
-          Evaluate your resume independently against modern parser criteria (formatting, sections, skills, and metrics) or compare against 25+ target market roles to maximize interview shortlisting.
+        <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-3xl leading-relaxed">
+          Get honest, transparent feedback on your resume’s parser readability, section structure, and technical skill density. Never generates fake scores, inflated metrics, or false promises.
         </p>
       </div>
 
-      {/* Main Grid: Upload & Options */}
+      {/* Main Grid: Upload & Controls */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* Left Column: Input Form (Step 1 & Step 2) */}
         <div className="lg:col-span-6 space-y-6">
 
           {/* STEP 1: Upload Card */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-5">
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-5">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center space-x-2">
-                <span className="w-6 h-6 rounded-full bg-navy-900 text-white text-xs font-bold flex items-center justify-center">1</span>
-                <h2 className="text-sm sm:text-base font-bold text-navy-900">Upload or Select Resume</h2>
+                <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center">1</span>
+                <h2 className="text-sm sm:text-base font-bold text-slate-900">Upload or Select Resume</h2>
               </div>
-              <span className="text-[11px] font-semibold text-slate-400">Step 1 of 3</span>
+              <span className="text-[11px] font-semibold text-slate-400">Step 1 of 2</span>
             </div>
 
             {/* Input Mode Selector */}
@@ -272,34 +379,34 @@ export default function ATSCheckerPage() {
               <button
                 type="button"
                 onClick={() => setInputMode('upload')}
-                className={`py-2 rounded-xl transition ${inputMode === 'upload' ? 'bg-white text-navy-900 shadow-sm' : 'text-slate-500 hover:text-navy-900'}`}
+                className={`py-2 rounded-xl transition ${inputMode === 'upload' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
               >
                 Upload File
               </button>
               <button
                 type="button"
                 onClick={() => setInputMode('saved')}
-                className={`py-2 rounded-xl transition ${inputMode === 'saved' ? 'bg-white text-navy-900 shadow-sm' : 'text-slate-500 hover:text-navy-900'}`}
+                className={`py-2 rounded-xl transition ${inputMode === 'saved' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
               >
-                Saved Resumes
+                Saved Resume
               </button>
               <button
                 type="button"
                 onClick={() => setInputMode('paste')}
-                className={`py-2 rounded-xl transition ${inputMode === 'paste' ? 'bg-white text-navy-900 shadow-sm' : 'text-slate-500 hover:text-navy-900'}`}
+                className={`py-2 rounded-xl transition ${inputMode === 'paste' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
               >
                 Paste Text
               </button>
             </div>
 
-            {/* Mode 1: Direct File Upload */}
+            {/* Mode 1: File Upload */}
             {inputMode === 'upload' && (
               <div className="space-y-3">
                 <div
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50 hover:bg-blue-50/40 rounded-2xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center space-y-2"
+                  className="border-2 border-dashed border-slate-200 hover:border-teal-400 bg-slate-50 hover:bg-teal-50/20 rounded-2xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center space-y-2"
                 >
                   <input
                     type="file"
@@ -308,36 +415,36 @@ export default function ATSCheckerPage() {
                     accept=".pdf,.docx,.doc,.txt"
                     className="hidden"
                   />
-                  <div className="w-12 h-12 rounded-2xl bg-white shadow-sm border border-slate-200 flex items-center justify-center text-blue-600">
+                  <div className="w-12 h-12 rounded-2xl bg-white shadow-xs border border-slate-200 flex items-center justify-center text-teal-600">
                     <UploadCloud className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-navy-900">
+                    <p className="text-xs font-bold text-slate-900">
                       {selectedFile ? selectedFile.name : 'Click to upload or drag & drop resume'}
                     </p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
+                    <p className="text-[11px] text-slate-500 mt-0.5">
                       Accepts PDF, DOCX, DOC (up to 5MB)
                     </p>
                   </div>
                 </div>
 
                 {selectedFile && (
-                  <div className="flex items-center justify-between p-3 bg-blue-50/70 border border-blue-200 rounded-xl text-xs">
-                    <div className="flex items-center space-x-2 text-navy-900 font-semibold truncate">
-                      <FileCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                  <div className="flex items-center justify-between p-3 bg-teal-50/60 border border-teal-200 rounded-xl text-xs">
+                    <div className="flex items-center space-x-2 text-slate-900 font-semibold truncate">
+                      <FileCheck className="w-4 h-4 text-teal-600 shrink-0" />
                       <span className="truncate">{selectedFile.name}</span>
-                      <span className="text-slate-400 text-[10px]">({(selectedFile.size / 1024).toFixed(0)} KB)</span>
+                      <span className="text-slate-500 text-[10px]">({(selectedFile.size / 1024).toFixed(0)} KB)</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => setSelectedFile(null)}
-                      className="text-slate-400 hover:text-red-500 p-1"
+                      className="text-slate-400 hover:text-rose-500 p-1"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                 )}
-                {fileError && <p className="text-xs text-red-600 font-medium">{fileError}</p>}
+                {fileError && <p className="text-xs text-rose-600 font-medium">{fileError}</p>}
               </div>
             )}
 
@@ -350,7 +457,7 @@ export default function ATSCheckerPage() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-navy-900 block">Select Saved Profile Resume:</label>
+                    <label className="text-xs font-bold text-slate-900 block">Select Saved Profile Resume:</label>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                       {resumes.map(r => (
                         <div
@@ -358,18 +465,18 @@ export default function ATSCheckerPage() {
                           onClick={() => setSelectedResumeId(r.id)}
                           className={`p-3 rounded-xl border text-xs cursor-pointer flex items-center justify-between transition ${
                             selectedResumeId === r.id
-                              ? 'bg-blue-50/70 border-blue-400 text-navy-900 font-semibold'
-                              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                              ? 'bg-teal-50/70 border-teal-500 text-slate-900 font-semibold'
+                              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                           }`}
                         >
                           <div className="flex items-center space-x-2 truncate">
-                            <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+                            <FileText className="w-4 h-4 text-teal-600 shrink-0" />
                             <span className="truncate">{r.title || r.filename}</span>
                             {r.is_primary && (
-                              <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 text-[9px] font-bold">PRIMARY</span>
+                              <span className="px-1.5 py-0.5 rounded bg-teal-100 text-teal-800 text-[9px] font-bold">PRIMARY</span>
                             )}
                           </div>
-                          {selectedResumeId === r.id && <Check className="w-4 h-4 text-blue-600" />}
+                          {selectedResumeId === r.id && <Check className="w-4 h-4 text-teal-600" />}
                         </div>
                       ))}
                     </div>
@@ -381,46 +488,46 @@ export default function ATSCheckerPage() {
             {/* Mode 3: Paste Text */}
             {inputMode === 'paste' && (
               <div className="space-y-2">
-                <label className="text-xs font-bold text-navy-900 block">Paste Resume Content:</label>
+                <label className="text-xs font-bold text-slate-900 block">Paste Resume Content:</label>
                 <textarea
                   rows={7}
                   value={manualText}
                   onChange={(e) => setManualText(e.target.value)}
                   placeholder="Paste work experience, education, skills, and summary..."
-                  className="w-full p-3 rounded-2xl border border-slate-200 bg-slate-50 text-xs text-navy-900 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full p-3 rounded-2xl border border-slate-200 bg-slate-50 text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none"
                 />
               </div>
             )}
 
-            {/* Step 1 Action Button: Independent Analysis */}
+            {/* Independent Evaluation Button */}
             <button
               type="button"
               disabled={analyzing}
               onClick={() => handleRunAnalysis(false)}
-              className="w-full py-3.5 px-4 bg-navy-900 hover:bg-navy-800 text-white rounded-2xl font-bold text-xs tracking-wide shadow-sm flex items-center justify-center space-x-2 transition disabled:opacity-50"
+              className="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-bold text-xs tracking-wide shadow-xs flex items-center justify-center space-x-2 transition disabled:opacity-50"
             >
               {analyzing && !showJobMatching ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin text-blue-400" />
-                  <span>{statusMessage || 'Analyzing Resume...'}</span>
+                  <RefreshCw className="w-4 h-4 animate-spin text-teal-400" />
+                  <span>{statusMessage || 'Analyzing Document...'}</span>
                 </>
               ) : (
                 <>
-                  <ShieldCheck className="w-4 h-4 text-blue-400" />
-                  <span>Analyze Resume (Independent ATS Evaluation)</span>
+                  <ShieldCheck className="w-4 h-4 text-teal-400" />
+                  <span>Calculate Resume Quality Score (Independent)</span>
                 </>
               )}
             </button>
           </div>
 
           {/* STEP 2: Optional Job Matching Card */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="w-6 h-6 rounded-full bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center">2</span>
                 <div>
-                  <h3 className="text-sm sm:text-base font-bold text-navy-900">Compare with a Job (Optional)</h3>
-                  <p className="text-[11px] text-slate-400">Match against 25+ standard roles or paste a specific job description</p>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900">Compare with a Job (Optional)</h3>
+                  <p className="text-[11px] text-slate-500">Calculate separate Job Match Score against 25+ roles or a custom JD</p>
                 </div>
               </div>
               <button
@@ -435,9 +542,9 @@ export default function ATSCheckerPage() {
 
             {showJobMatching && (
               <div className="space-y-4 pt-3 border-t border-slate-100">
-                {/* Searchable Target Roles List */}
+                {/* Searchable Target Roles */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-navy-900 block">Select from 25+ Trending Roles:</label>
+                  <label className="text-xs font-bold text-slate-900 block">Select from 25+ Industry Roles:</label>
                   <div className="relative">
                     <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
                     <input
@@ -445,11 +552,11 @@ export default function ATSCheckerPage() {
                       value={roleSearchQuery}
                       onChange={(e) => setRoleSearchQuery(e.target.value)}
                       placeholder="Search roles (e.g. Python, Full Stack, Data Analyst, Cloud)..."
-                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none"
                     />
                   </div>
 
-                  <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                  <div className="max-h-44 overflow-y-auto space-y-1.5 pr-1">
                     {filteredRoles.map(r => (
                       <div
                         key={r.id}
@@ -459,15 +566,15 @@ export default function ATSCheckerPage() {
                         }}
                         className={`p-2.5 rounded-xl border text-xs cursor-pointer flex items-center justify-between transition ${
                           selectedRole?.id === r.id
-                            ? 'bg-blue-50/70 border-blue-400 text-navy-900 font-semibold'
-                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                            ? 'bg-teal-50/70 border-teal-500 text-slate-900 font-semibold'
+                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                         }`}
                       >
                         <div className="truncate">
-                          <p className="font-semibold text-navy-900">{r.title}</p>
+                          <p className="font-semibold text-slate-900">{r.title}</p>
                           <p className="text-[10px] text-slate-400 truncate">{r.skills.slice(0, 5).join(' • ')}</p>
                         </div>
-                        {selectedRole?.id === r.id && <Check className="w-4 h-4 text-blue-600 shrink-0 ml-2" />}
+                        {selectedRole?.id === r.id && <Check className="w-4 h-4 text-teal-600 shrink-0 ml-2" />}
                       </div>
                     ))}
                   </div>
@@ -475,13 +582,13 @@ export default function ATSCheckerPage() {
 
                 {/* Custom Job Description Area */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-navy-900 block">Or Paste Custom Job Description:</label>
+                  <label className="text-xs font-bold text-slate-900 block">Or Paste Custom Job Description:</label>
                   <textarea
                     rows={4}
                     value={customJobDescription}
                     onChange={(e) => setCustomJobDescription(e.target.value)}
-                    placeholder="Paste job posting description, requirements, and responsibilities..."
-                    className="w-full p-3 rounded-2xl border border-slate-200 bg-slate-50 text-xs text-navy-900 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                    placeholder="Paste job posting description and requirements..."
+                    className="w-full p-3 rounded-2xl border border-slate-200 bg-slate-50 text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none"
                   />
                 </div>
 
@@ -490,7 +597,7 @@ export default function ATSCheckerPage() {
                   type="button"
                   disabled={analyzing || (!selectedRole && !customJobDescription)}
                   onClick={() => handleRunAnalysis(true)}
-                  className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-xs tracking-wide shadow-sm flex items-center justify-center space-x-2 transition disabled:opacity-40"
+                  className="w-full py-3 px-4 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold text-xs tracking-wide shadow-xs flex items-center justify-center space-x-2 transition disabled:opacity-40"
                 >
                   {analyzing ? (
                     <>
@@ -500,7 +607,7 @@ export default function ATSCheckerPage() {
                   ) : (
                     <>
                       <Target className="w-4 h-4 text-white" />
-                      <span>Recalculate Score with Target Role</span>
+                      <span>Calculate Job Match Score</span>
                     </>
                   )}
                 </button>
@@ -509,8 +616,8 @@ export default function ATSCheckerPage() {
           </div>
 
           {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-700 flex items-start space-x-2">
-              <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+            <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 flex items-start space-x-2">
+              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
@@ -521,30 +628,30 @@ export default function ATSCheckerPage() {
         <div className="lg:col-span-6 space-y-6">
 
           {!result && !analyzing && (
-            <div className="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-4 shadow-sm">
-              <div className="w-16 h-16 rounded-3xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
+            <div className="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-4 shadow-xs">
+              <div className="w-16 h-16 rounded-3xl bg-slate-100 text-slate-700 flex items-center justify-center mx-auto">
                 <FileText className="w-8 h-8" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-navy-900">No Resume Analyzed Yet</h3>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                  Upload a PDF/DOCX resume on the left or select a saved resume to view your ATS score and improvement roadmap.
+                <h3 className="text-base font-bold text-slate-900">No Resume Analyzed Yet</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  Upload a PDF/DOCX resume on the left or select a saved resume to view your honest Resume Quality Score and evidence breakdown.
                 </p>
               </div>
               <div className="pt-4 border-t border-slate-100 flex flex-wrap justify-center gap-4 text-[11px] text-slate-500">
-                <span className="flex items-center"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 mr-1" /> 100% Free & Secure</span>
-                <span className="flex items-center"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 mr-1" /> PDF & DOCX Support</span>
-                <span className="flex items-center"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 mr-1" /> 25+ Target Roles</span>
+                <span className="flex items-center"><CheckCircle className="w-3.5 h-3.5 text-teal-600 mr-1" /> Transparent 6-Category Scoring</span>
+                <span className="flex items-center"><CheckCircle className="w-3.5 h-3.5 text-teal-600 mr-1" /> PDF & DOCX Support</span>
+                <span className="flex items-center"><CheckCircle className="w-3.5 h-3.5 text-teal-600 mr-1" /> No Fabricated Numbers</span>
               </div>
             </div>
           )}
 
           {analyzing && (
-            <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4 shadow-sm">
-              <RefreshCw className="w-10 h-10 animate-spin text-blue-600 mx-auto" />
+            <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4 shadow-xs">
+              <RefreshCw className="w-10 h-10 animate-spin text-teal-600 mx-auto" />
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-navy-900">Analyzing Your Resume</h3>
-                <p className="text-xs text-slate-400">{statusMessage || 'Parsing document structure, keywords, and metrics...'}</p>
+                <h3 className="text-base font-bold text-slate-900">Evaluating Resume Integrity</h3>
+                <p className="text-xs text-slate-500">{statusMessage || 'Parsing structure, skills, and metrics...'}</p>
               </div>
             </div>
           )}
@@ -552,140 +659,232 @@ export default function ATSCheckerPage() {
           {result && (
             <div className="space-y-6">
               
-              {/* Score Hero Card */}
-              <div className="bg-gradient-to-br from-navy-900 via-navy-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl space-y-6">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-                  <div>
-                    <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-[11px] font-bold uppercase tracking-wider">
-                      {result.analysis_mode === 'job_matched' ? `Role: ${result.job_title}` : 'Independent Baseline'}
-                    </span>
-                    <h2 className="text-xl sm:text-2xl font-black mt-2 tracking-tight">
-                      ATS Compatibility Score
+              {/* Parsing Warnings / Scanned PDF alerts */}
+              {result.parsing_alerts && result.parsing_alerts.length > 0 && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs space-y-1.5 text-amber-900">
+                  <div className="flex items-center space-x-1.5 font-bold text-amber-800">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Parser Notice:</span>
+                  </div>
+                  {result.parsing_alerts.map((al, idx) => (
+                    <p key={idx} className="text-[11px] text-amber-800 leading-relaxed">• {al}</p>
+                  ))}
+                </div>
+              )}
+
+              {/* Primary Score Hero Card */}
+              <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 shadow-sm space-y-6">
+                
+                {/* Score Header */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-6 border-b border-slate-100">
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 text-[10px] font-bold uppercase tracking-wider">
+                        {result.analysis_mode === 'job_matched' ? `Job Match: ${result.job_title}` : 'Universal Quality Baseline'}
+                      </span>
+                    </div>
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                      {result.analysis_mode === 'job_matched' ? 'Job Match Compatibility' : 'Resume Quality Score'}
                     </h2>
-                    <p className="text-xs text-slate-300 mt-1 max-w-sm">
+                    <p className="text-xs text-slate-500 max-w-sm">
                       {result.analysis_mode === 'job_matched' 
-                        ? `Evaluated against key competencies for ${result.job_title}.`
-                        : 'Evaluated against universal parser standards across formatting, sections, and technical density.'}
+                        ? `Evaluated against core and preferred requirements for ${result.job_title}.`
+                        : 'Evaluated against universal parser standards: formatting, section structure, skill density, and impact evidence.'}
                     </p>
                   </div>
 
                   {/* Circular Score Badge */}
                   <div className="relative flex items-center justify-center shrink-0">
-                    <div className="w-28 h-28 rounded-full border-4 border-slate-700/60 flex flex-col items-center justify-center bg-navy-900/80 shadow-2xl">
-                      <span className="text-3xl sm:text-4xl font-extrabold text-blue-400">
+                    <div className={`w-24 h-24 rounded-full border-4 flex flex-col items-center justify-center shadow-xs ${
+                      result.overall_score >= 80 ? 'border-emerald-500 bg-emerald-50/40 text-emerald-800' :
+                      result.overall_score >= 60 ? 'border-teal-500 bg-teal-50/40 text-teal-800' :
+                      'border-amber-500 bg-amber-50/40 text-amber-800'
+                    }`}>
+                      <span className="text-3xl font-black">
                         {result.overall_score}
                       </span>
-                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">/ 100</span>
+                      <span className="text-[9px] uppercase font-bold text-slate-400">/ 100</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Achievable Potential Score Callout */}
-                <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-between text-xs">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400">
-                      <TrendingUp className="w-5 h-5" />
+                {/* Score Dual Callout (If Job Matched, show both) */}
+                {result.analysis_mode === 'job_matched' && (
+                  <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-slate-500 block">Resume Quality Score</span>
+                      <span className="text-base font-bold text-slate-800">{result.resume_quality_score} / 100</span>
                     </div>
                     <div>
-                      <p className="font-bold text-white">Achievable Target Score: <span className="text-emerald-400">{result.potential_score}%</span></p>
-                      <p className="text-[11px] text-slate-300">Practical edits to formatting, power verbs, and metrics can boost your score.</p>
+                      <span className="text-[10px] font-bold uppercase text-teal-700 block">Job Match Score</span>
+                      <span className="text-base font-bold text-teal-700">{result.job_match_score} / 100</span>
                     </div>
                   </div>
+                )}
 
-                  {/* STEP 3 ACTION BUTTON */}
+                {/* Studio CTA Button */}
+                <div className="flex items-center justify-between pt-2">
+                  <div>
+                    <span className="text-xs font-bold text-slate-900 block">Resume Improvement Studio</span>
+                    <span className="text-[11px] text-slate-500">Review section-by-section suggestions and add real metrics.</span>
+                  </div>
+
                   <button
                     type="button"
                     onClick={handleOpenImprovementStudio}
-                    className="px-4 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-bold text-xs tracking-wide shadow-md transition shrink-0 ml-3 flex items-center space-x-1.5"
+                    className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs tracking-wide shadow-xs transition shrink-0 ml-3 flex items-center space-x-1.5"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
-                    <span>Improve My Resume</span>
+                    <span>Open Studio</span>
                   </button>
                 </div>
+
               </div>
 
-              {/* Measurable Criteria Breakdown (Formatting, Sections, Skills, Experience, Keywords) */}
+              {/* 6-Category Transparent Criteria Breakdown (CHUNK 2) */}
               {result.measurable_criteria && (
-                <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
-                  <h3 className="text-sm font-bold text-navy-900 flex items-center space-x-2">
-                    <Layers className="w-4 h-4 text-blue-600" />
-                    <span>Measurable ATS Evaluation Criteria</span>
-                  </h3>
+                <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                      <Layers className="w-4 h-4 text-teal-600" />
+                      <span>Transparent Scoring Breakdown (100 Pts Total)</span>
+                    </h3>
+                    <span className="text-[10px] text-slate-400 font-semibold">Points Earned / Max</span>
+                  </div>
 
-                  <div className="space-y-3.5">
+                  <div className="space-y-4">
                     {Object.entries(result.measurable_criteria).map(([key, item]) => (
-                      <div key={key} className="space-y-1">
+                      <div key={key} className="space-y-1.5">
                         <div className="flex justify-between text-xs font-semibold">
-                          <span className="text-slate-700">{item.label}</span>
-                          <span className={`font-bold ${item.score >= 80 ? 'text-emerald-600' : item.score >= 60 ? 'text-blue-600' : 'text-amber-600'}`}>
-                            {item.score}%
+                          <span className="text-slate-800">{item.label}</span>
+                          <span className="font-bold text-slate-900">
+                            {item.earned} / {item.max} pts ({item.score}%)
                           </span>
                         </div>
                         <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                           <div
                             className={`h-2 rounded-full transition-all duration-500 ${
-                              item.score >= 80 ? 'bg-emerald-500' : item.score >= 60 ? 'bg-blue-500' : 'bg-amber-500'
+                              item.score >= 80 ? 'bg-emerald-500' : item.score >= 60 ? 'bg-teal-500' : 'bg-amber-500'
                             }`}
                             style={{ width: `${item.score}%` }}
                           />
                         </div>
-                        <p className="text-[10px] text-slate-400">{item.details}</p>
+                        <p className="text-[10px] text-slate-500">{item.details}</p>
+                        
+                        {/* Deductions notes */}
+                        {item.deductions && item.deductions.length > 0 && (
+                          <div className="pt-1">
+                            {item.deductions.map((ded, dIdx) => (
+                              <p key={dIdx} className="text-[10px] text-amber-700 flex items-center space-x-1">
+                                <span className="text-amber-500 font-bold">•</span>
+                                <span>{ded}</span>
+                              </p>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Matched vs Missing Skills (If Job Matched) */}
+              {/* Matched vs Missing Skills (When Job Matched - CHUNK 3) */}
               {result.analysis_mode === 'job_matched' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-2">
-                    <p className="text-xs font-bold text-emerald-700 flex items-center">
-                      <CheckCircle className="w-3.5 h-3.5 mr-1 text-emerald-600" />
-                      Matched Skills ({result.matched_skills?.length || 0})
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {result.matched_skills?.length > 0 ? (
-                        result.matched_skills.map((s, idx) => (
-                          <span key={idx} className="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-semibold border border-emerald-200">
-                            {s}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-xs text-slate-400">No direct skills matched yet.</span>
-                      )}
+                <div className="space-y-4">
+                  
+                  {/* Mandatory Skills Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-2">
+                      <p className="text-xs font-bold text-emerald-800 flex items-center">
+                        <CheckCircle className="w-3.5 h-3.5 mr-1 text-emerald-600" />
+                        Core / Mandatory Skills Matched ({result.matched_mandatory?.length || 0})
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {result.matched_mandatory?.length > 0 ? (
+                          result.matched_mandatory.map((s, idx) => (
+                            <span key={idx} className="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-semibold border border-emerald-200">
+                              {s}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-slate-400">No core mandatory skills matched yet.</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-2">
+                      <p className="text-xs font-bold text-amber-800 flex items-center">
+                        <AlertTriangle className="w-3.5 h-3.5 mr-1 text-amber-600" />
+                        Core Skills Missing ({result.missing_mandatory?.length || 0})
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {result.missing_mandatory?.length > 0 ? (
+                          result.missing_mandatory.map((s, idx) => (
+                            <span key={idx} className="px-2 py-0.5 rounded-lg bg-amber-50 text-amber-800 text-[11px] font-semibold border border-amber-200">
+                              {s}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-emerald-700 font-medium">All mandatory skills matched!</span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-2">
-                    <p className="text-xs font-bold text-amber-700 flex items-center">
-                      <AlertTriangle className="w-3.5 h-3.5 mr-1 text-amber-600" />
-                      Missing Role Skills ({result.missing_skills?.length || 0})
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {result.missing_skills?.length > 0 ? (
-                        result.missing_skills.map((s, idx) => (
-                          <span key={idx} className="px-2 py-0.5 rounded-lg bg-amber-50 text-amber-800 text-[11px] font-semibold border border-amber-200">
-                            {s}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-xs text-emerald-600 font-medium">All core role skills matched!</span>
-                      )}
+                  {/* Partially Demonstrated Skills */}
+                  {result.partially_matched && result.partially_matched.length > 0 && (
+                    <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-2xl text-xs space-y-1">
+                      <span className="font-bold text-blue-900 block">Transferable / Related Competencies Detected:</span>
+                      {result.partially_matched.map((pm, idx) => (
+                        <p key={idx} className="text-[11px] text-blue-800">• {pm}</p>
+                      ))}
                     </div>
+                  )}
+
+                  {/* Role Recommendations */}
+                  {result.role_recommendations && result.role_recommendations.length > 0 && (
+                    <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-2 text-xs">
+                      <span className="font-bold text-slate-900 block">Target Role Recommendations:</span>
+                      {result.role_recommendations.map((rec, idx) => (
+                        <p key={idx} className="text-slate-700 leading-relaxed">• {rec}</p>
+                      ))}
+                    </div>
+                  )}
+
+                </div>
+              )}
+
+              {/* Point-Bearing Improvement Opportunities (CHUNK 4: Measurable Points) */}
+              {result.improvement_opportunities && result.improvement_opportunities.length > 0 && (
+                <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-3">
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center space-x-2">
+                    <Zap className="w-4 h-4 text-teal-600" />
+                    <span>Evidence-Based Point Gain Opportunities</span>
+                  </h4>
+                  <div className="space-y-2.5">
+                    {result.improvement_opportunities.map((opp, idx) => (
+                      <div key={idx} className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-start justify-between space-x-3 text-xs">
+                        <div className="space-y-0.5">
+                          <p className="font-bold text-slate-900">{opp.action}</p>
+                          <p className="text-[11px] text-slate-600 leading-relaxed">{opp.description}</p>
+                        </div>
+                        <span className="px-2 py-1 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 text-[10px] font-black shrink-0">
+                          +{opp.points_available} pts
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
 
-              {/* Strengths & Weaknesses Cards */}
+              {/* Identified Strengths & Weaknesses */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Strengths */}
                 <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
-                  <h4 className="text-xs font-bold text-navy-900 flex items-center space-x-1.5">
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
                     <CheckCircle className="w-4 h-4 text-emerald-600" />
-                    <span>Identified Strengths</span>
+                    <span>Verified Strengths</span>
                   </h4>
-                  <ul className="space-y-2 text-xs text-slate-600">
+                  <ul className="space-y-2 text-xs text-slate-700">
                     {result.strengths?.map((str, idx) => (
                       <li key={idx} className="flex items-start space-x-2">
                         <span className="text-emerald-500 font-bold">•</span>
@@ -695,14 +894,13 @@ export default function ATSCheckerPage() {
                   </ul>
                 </div>
 
-                {/* Weaknesses */}
                 <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
-                  <h4 className="text-xs font-bold text-navy-900 flex items-center space-x-1.5">
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
                     <AlertTriangle className="w-4 h-4 text-amber-500" />
                     <span>Areas for Improvement</span>
                   </h4>
-                  <ul className="space-y-2 text-xs text-slate-600">
-                    {result.weaknesses?.map((w, idx) => (
+                  <ul className="space-y-2 text-xs text-slate-700">
+                    {result.weaknesses?.slice(0, 4).map((w, idx) => (
                       <li key={idx} className="flex items-start space-x-2">
                         <span className="text-amber-500 font-bold">•</span>
                         <span>{w}</span>
@@ -712,26 +910,6 @@ export default function ATSCheckerPage() {
                 </div>
               </div>
 
-              {/* Actionable Suggestions */}
-              {result.suggestions && result.suggestions.length > 0 && (
-                <div className="bg-blue-50/60 rounded-3xl border border-blue-200 p-6 space-y-3">
-                  <h4 className="text-xs font-bold text-navy-900 flex items-center space-x-2">
-                    <Zap className="w-4 h-4 text-blue-600" />
-                    <span>Actionable Recommendations</span>
-                  </h4>
-                  <div className="space-y-2 text-xs text-slate-700">
-                    {result.suggestions.map((sug, idx) => (
-                      <div key={idx} className="p-3 bg-white rounded-xl border border-blue-100 flex items-start space-x-2 shadow-2xs">
-                        <span className="w-4 h-4 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
-                          {idx + 1}
-                        </span>
-                        <span>{sug}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
             </div>
           )}
 
@@ -739,30 +917,33 @@ export default function ATSCheckerPage() {
 
       </div>
 
-      {/* STEP 3 MODAL: RESUME IMPROVEMENT STUDIO */}
+      {/* ========================================================================= */}
+      {/* RESUME IMPROVEMENT STUDIO (Simplified, Section-by-Section Workflow) */}
+      {/* ========================================================================= */}
       {studioOpen && (
-        <div className="fixed inset-0 z-50 bg-navy-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden">
             
             {/* Studio Header */}
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
+            <div className="p-5 sm:p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-2xl bg-navy-900 text-white flex items-center justify-center shadow-sm">
-                  <Edit3 className="w-5 h-5 text-blue-400" />
+                <div className="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-xs">
+                  <Edit3 className="w-5 h-5 text-teal-400" />
                 </div>
                 <div>
-                  <h3 className="text-base sm:text-lg font-extrabold text-navy-900">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
                     Resume Improvement Studio
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Review and edit optimized phrasing, action power verbs, and structured sections before saving.
+                    Section-by-section suggestions to improve readability and keyword alignment. Edit directly below.
                   </p>
                 </div>
               </div>
+
               <button
                 type="button"
                 onClick={() => setStudioOpen(false)}
-                className="w-8 h-8 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600"
+                className="w-8 h-8 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 transition"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -772,99 +953,133 @@ export default function ATSCheckerPage() {
             <div className="p-6 overflow-y-auto flex-1 space-y-6">
               
               {improving ? (
-                <div className="py-16 text-center space-y-3">
-                  <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
-                  <p className="text-xs text-slate-500 font-semibold">Generating tailored recommendations and draft...</p>
+                <div className="py-20 text-center space-y-3">
+                  <RefreshCw className="w-8 h-8 animate-spin text-teal-600 mx-auto" />
+                  <p className="text-xs text-slate-500 font-semibold">Analyzing resume and generating section suggestions...</p>
                 </div>
               ) : (
                 <>
-                  {/* Practical Suggestions Banner */}
-                  <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl flex items-start space-x-3 text-xs">
-                    <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <p className="font-bold text-emerald-900">Practical Path toward a 90+ Score</p>
-                      <p className="text-emerald-800">
-                        We have reformatted your skills into clean categories, introduced strong action verbs, and inserted metric placeholders. Edit any text directly in the studio below to match your real achievements.
-                      </p>
+                  {saveSuccessMsg && (
+                    <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-800 flex items-center space-x-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span className="font-semibold">{saveSuccessMsg}</span>
                     </div>
+                  )}
+
+                  {/* Trust & Transparency Guidance */}
+                  <div className="p-4 bg-teal-50/70 border border-teal-200 rounded-2xl space-y-1.5 text-xs">
+                    <div className="flex items-center space-x-2 text-teal-950 font-bold">
+                      <CheckCircle className="w-4 h-4 text-teal-600 shrink-0" />
+                      <span>Authentic Phrasing & Section Improvements</span>
+                    </div>
+                    <p className="text-teal-800 leading-relaxed text-[11px]">
+                      The AI-suggested version below refines active verbs, professional structure, and keyword relevance strictly based on your uploaded experience. <strong>No skills, certifications, or metrics are ever fabricated.</strong> You can edit the suggested text directly.
+                    </p>
+                    <p className="text-teal-700/80 text-[10px] italic">
+                      *Note: Suggestions help enhance clarity and ATS readability; they do not guarantee a specific automated score.
+                    </p>
                   </div>
 
-                  {/* Interactive Textarea Editor */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs font-bold text-navy-900">
-                      <span>Editable Improved Resume Draft:</span>
-                      <span className="text-[11px] text-slate-400 font-normal">Edit freely below</span>
-                    </div>
-                    <textarea
-                      rows={14}
-                      value={editableDraft}
-                      onChange={(e) => setEditableDraft(e.target.value)}
-                      className="w-full p-4 rounded-2xl border border-slate-200 bg-slate-50 text-xs text-navy-900 font-mono leading-relaxed focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
+                  {/* Section List */}
+                  <div className="space-y-6">
+                    {sectionsState.map((sec, idx) => (
+                      <div key={sec.id || idx} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 shadow-2xs">
+                        
+                        {/* Section Title & Rationale */}
+                        <div className="border-b border-slate-200 pb-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">{sec.title}</span>
+                            <span className="text-[10px] font-semibold text-teal-700 bg-teal-100/70 px-2 py-0.5 rounded-md">Suggested Revision</span>
+                          </div>
+                          {sec.rationale && (
+                            <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                              <strong>Why this helps ATS:</strong> {sec.rationale}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Side-by-side or Original Reference + Suggested Editor */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                          
+                          {/* Original Text Reference (4 cols) */}
+                          <div className="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-3.5 space-y-1.5">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Original Section:</span>
+                            <div className="text-xs text-slate-600 whitespace-pre-wrap font-sans leading-relaxed max-h-48 overflow-y-auto pr-1">
+                              {sec.original || "No original content provided for this section."}
+                            </div>
+                          </div>
+
+                          {/* Suggested & Editable Textarea (7 cols - Main Focus) */}
+                          <div className="lg:col-span-7 space-y-1.5">
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="font-bold text-slate-800">Suggested Version (Click & edit directly):</span>
+                              <span className="text-[10px] text-slate-400">Directly editable</span>
+                            </div>
+                            <textarea
+                              rows={Math.max(4, Math.min(10, (sec.currentContent || '').split('\n').length + 2))}
+                              value={sec.currentContent}
+                              onChange={(e) => handleEditSectionContent(sec.id, e.target.value)}
+                              className="w-full p-3 rounded-xl border border-teal-300 bg-white text-xs text-slate-900 font-mono leading-relaxed focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none shadow-xs transition"
+                              placeholder="Edit your improved text here..."
+                            />
+                          </div>
+
+                        </div>
+
+                      </div>
+                    ))}
                   </div>
+
                 </>
               )}
 
             </div>
 
             {/* Studio Footer Actions */}
-            <div className="p-4 sm:p-6 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+            <div className="p-4 sm:p-5 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-3 shrink-0">
               
-              {/* Left Action: Continue in Full AI Assistant */}
               <button
                 type="button"
-                onClick={() => {
-                  setStudioOpen(false);
-                  navigate('/assistant', {
-                    state: {
-                      initialPrompt: `I just analyzed my resume for ${selectedRole?.title || result?.job_title || 'Software Engineering'}. My ATS score was ${result?.overall_score}%. Can you help me refine my work experience bullets with strong metrics?`,
-                      context: `Resume Text:\n${editableDraft || result?.extracted_text || ''}\nTarget Role: ${selectedRole?.title || ''}`
-                    }
-                  });
-                }}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center space-x-1.5 transition"
+                onClick={() => setStudioOpen(false)}
+                className="px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold transition"
               >
-                <Bot className="w-4 h-4 text-blue-600" />
-                <span>Continue in Full AI Assistant</span>
+                Close
               </button>
 
-              {/* Right Actions: Copy & Downloads */}
-              <div className="w-full sm:w-auto flex items-center justify-end space-x-2">
+              <div className="flex items-center space-x-2">
+                {/* Copy Assembled Draft */}
                 <button
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText(editableDraft);
+                    navigator.clipboard.writeText(getAssembledDraft());
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2500);
                   }}
-                  className="px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center space-x-1 transition"
+                  className="px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold flex items-center space-x-1.5 transition"
                 >
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
-                  <span>{copied ? 'Copied!' : 'Copy'}</span>
+                  <span>{copied ? 'Copied' : 'Copy Text'}</span>
                 </button>
 
+                {/* Clear Primary Action: Save Changes */}
                 <button
                   type="button"
-                  disabled={downloading}
-                  onClick={() => handleDownload('txt')}
-                  className="px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center space-x-1 transition"
+                  disabled={savingToProfile || improving}
+                  onClick={handleSaveToProfile}
+                  className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold flex items-center space-x-1.5 shadow-sm transition disabled:opacity-50"
+                  title="Save revised sections to your resume data"
                 >
-                  <Download className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Download .TXT</span>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={downloading}
-                  onClick={() => handleDownload('docx')}
-                  className="px-4 py-2.5 rounded-xl bg-navy-900 hover:bg-navy-800 text-white text-xs font-bold flex items-center space-x-1.5 shadow transition"
-                >
-                  {downloading ? (
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
+                  {savingToProfile ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
+                      <span>Saving Changes...</span>
+                    </>
                   ) : (
-                    <Download className="w-3.5 h-3.5 text-blue-400" />
+                    <>
+                      <Save className="w-3.5 h-3.5 text-white" />
+                      <span>Save Changes</span>
+                    </>
                   )}
-                  <span>Download .DOCX</span>
                 </button>
               </div>
 

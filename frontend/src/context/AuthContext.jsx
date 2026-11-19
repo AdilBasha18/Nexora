@@ -37,6 +37,14 @@ export function AuthProvider({ children }) {
     return res;
   };
 
+  // Used by Google OAuth and other external auth flows
+  const loginWithToken = (token, userData) => {
+    localStorage.setItem('nexora_token', token);
+    localStorage.setItem('nexora_user', JSON.stringify(userData));
+    setToken(token);
+    setUser(userData);
+  };
+
   const registerCandidate = async (formData) => {
     const res = await api.registerCandidate(formData);
     localStorage.setItem('nexora_token', res.token);
@@ -83,6 +91,7 @@ export function AuthProvider({ children }) {
     user,
     loading,
     login,
+    loginWithToken,
     registerCandidate,
     registerRecruiter,
     logout,

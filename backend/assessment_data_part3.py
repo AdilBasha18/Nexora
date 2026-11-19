@@ -89,7 +89,7 @@ PART3_DATA["microservices-system-design-architecture"] = [
         "examples": [
             {"input": "past = [1.0, 1.5], now = 2.0, max_req = 2, window = 2", "output": "True", "explanation": "2 requests already exist within (0.0, 2.0]."}
         ],
-        "starter_code": "def is_rate_limited(past_timestamps, timestamp, max_requests, window_secs):\n    # Write your solution below\n    cutoff = timestamp - window_secs\n    active = [t for t in past_timestamps if t > cutoff and t <= timestamp]\n    return len(active) >= max_requests\n",
+        "starter_code": "def is_rate_limited(past_timestamps, timestamp, max_requests, window_secs):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[1.0, 1.5], 2.0, 2, 2], "expected": True},
             {"inputs": [[1.0], 5.0, 2, 2], "expected": False}
@@ -114,7 +114,7 @@ PART3_DATA["microservices-system-design-architecture"] = [
         "examples": [
             {"input": "failures = 5, threshold = 5, last_fail = 100, now = 120, cooldown = 30", "output": "'OPEN'", "explanation": "Elapsed 20s < 30s cooldown."}
         ],
-        "starter_code": "def evaluate_breaker(consecutive_failures, failure_threshold, last_failure_timestamp, current_timestamp, cooldown_seconds):\n    # Write your solution below\n    if consecutive_failures < failure_threshold:\n        return 'CLOSED'\n    if current_timestamp - last_failure_timestamp < cooldown_seconds:\n        return 'OPEN'\n    return 'HALF_OPEN'\n",
+        "starter_code": "def evaluate_breaker(consecutive_failures, failure_threshold, last_failure_timestamp, current_timestamp, cooldown_seconds):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [5, 5, 100, 120, 30], "expected": "OPEN"},
             {"inputs": [5, 5, 100, 150, 30], "expected": "HALF_OPEN"}
@@ -139,7 +139,7 @@ PART3_DATA["microservices-system-design-architecture"] = [
         "examples": [
             {"input": "events = [{'id': 'a', 'payload': 10}, {'id': 'b', 'payload': 20}, {'id': 'a', 'payload': 10}]", "output": "[2, 1, 30]", "explanation": "2 unique, 1 duplicate rejected."}
         ],
-        "starter_code": "def process_events(events):\n    # Write your solution below\n    seen = set()\n    unique_cnt = 0\n    duplicate_cnt = 0\n    total_val = 0\n    for evt in events:\n        eid = evt.get('id')\n        if eid in seen:\n            duplicate_cnt += 1\n        else:\n            seen.add(eid)\n            unique_cnt += 1\n            total_val += evt.get('payload', 0)\n    return [unique_cnt, duplicate_cnt, total_val]\n",
+        "starter_code": "def process_events(events):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[{"id": "a", "payload": 10}, {"id": "b", "payload": 20}, {"id": "a", "payload": 10}]], "expected": [2, 1, 30]},
             {"inputs": [[]], "expected": [0, 0, 0]}
@@ -164,7 +164,7 @@ PART3_DATA["microservices-system-design-architecture"] = [
         "examples": [
             {"input": "servers = [60, 180, 300], key_pos = 100", "output": "180", "explanation": "180 is the next clockwise node after 100."}
         ],
-        "starter_code": "def assign_node(servers, key_pos):\n    # Write your solution below\n    for s in servers:\n        if s >= key_pos:\n            return s\n    return servers[0]\n",
+        "starter_code": "def assign_node(servers, key_pos):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[60, 180, 300], 100], "expected": 180},
             {"inputs": [[60, 180, 300], 350], "expected": 60}
@@ -189,7 +189,7 @@ PART3_DATA["microservices-system-design-architecture"] = [
         "examples": [
             {"input": "base = 100, retries = 3, max = 500", "output": "[100, 200, 400]", "explanation": "100*1, 100*2, 100*4."}
         ],
-        "starter_code": "def calculate_backoffs(base_delay_ms, max_retries, max_delay_ms):\n    # Write your solution below\n    return [min(max_delay_ms, base_delay_ms * (2 ** i)) for i in range(max_retries)]\n",
+        "starter_code": "def calculate_backoffs(base_delay_ms, max_retries, max_delay_ms):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [100, 3, 500], "expected": [100, 200, 400]},
             {"inputs": [100, 4, 300], "expected": [100, 200, 300, 300]}
@@ -286,7 +286,7 @@ PART3_DATA["python-core-hands-on-coding-challenges"] = [
         "examples": [
             {"input": "s = 'the sky is blue'", "output": "'blue is sky the'", "explanation": "Words reversed."}
         ],
-        "starter_code": "def reverse_words(s):\n    # Write your solution below\n    return ' '.join(s.split()[::-1])\n",
+        "starter_code": "def reverse_words(s):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": ["the sky is blue"], "expected": "blue is sky the"},
             {"inputs": ["  hello world  "], "expected": "world hello"}
@@ -311,7 +311,7 @@ PART3_DATA["python-core-hands-on-coding-challenges"] = [
         "examples": [
             {"input": "s = 'Hello World!'", "output": "[3, 7]", "explanation": "Vowels: e, o, o (3). Consonants: h, l, l, w, r, l, d (7)."}
         ],
-        "starter_code": "def count_vowels_consonants(s):\n    # Write your solution below\n    vowels = set('aeiouAEIOU')\n    v_cnt = 0\n    c_cnt = 0\n    for char in s:\n        if char.isalpha():\n            if char in vowels:\n                v_cnt += 1\n            else:\n                c_cnt += 1\n    return [v_cnt, c_cnt]\n",
+        "starter_code": "def count_vowels_consonants(s):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": ["Hello World!"], "expected": [3, 7]},
             {"inputs": ["aeiou"], "expected": [5, 0]}
@@ -336,7 +336,7 @@ PART3_DATA["python-core-hands-on-coding-challenges"] = [
         "examples": [
             {"input": "matrix = [[1, 2, 3], [4, 5, 6]]", "output": "[[1, 4], [2, 5], [3, 6]]", "explanation": "2x3 becomes 3x2."}
         ],
-        "starter_code": "def transpose(matrix):\n    # Write your solution below\n    return [list(row) for row in zip(*matrix)]\n",
+        "starter_code": "def transpose(matrix):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[[1, 2, 3], [4, 5, 6]]], "expected": [[1, 4], [2, 5], [3, 6]]},
             {"inputs": [[[1, 2], [3, 4]]], "expected": [[1, 3], [2, 4]]}
@@ -360,7 +360,7 @@ PART3_DATA["python-core-hands-on-coding-challenges"] = [
         "examples": [
             {"input": "nums1 = [1, 2, 2, 1], nums2 = [2, 2]", "output": "[2]", "explanation": "2 is in both."}
         ],
-        "starter_code": "def intersection(nums1, nums2):\n    # Write your solution below\n    return sorted(list(set(nums1) & set(nums2)))\n",
+        "starter_code": "def intersection(nums1, nums2):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[1, 2, 2, 1], [2, 2]], "expected": [2]},
             {"inputs": [[4, 9, 5], [9, 4, 9, 8, 4]], "expected": [4, 9]}
@@ -384,7 +384,7 @@ PART3_DATA["python-core-hands-on-coding-challenges"] = [
         "examples": [
             {"input": "s = 'abcde', goal = 'cdeab'", "output": "True", "explanation": "Shifted by 2."}
         ],
-        "starter_code": "def is_rotation(s, goal):\n    # Write your solution below\n    return len(s) == len(goal) and goal in (s + s)\n",
+        "starter_code": "def is_rotation(s, goal):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": ["abcde", "cdeab"], "expected": True},
             {"inputs": ["abcde", "abced"], "expected": False}
@@ -481,7 +481,7 @@ PART3_DATA["data-structures-algorithmic-problem-solving"] = [
         "examples": [
             {"input": "n = 3", "output": "3", "explanation": "1+1+1, 1+2, 2+1."}
         ],
-        "starter_code": "def climb_stairs(n):\n    # Write your solution below\n    if n <= 2:\n        return n\n    a, b = 1, 2\n    for _ in range(3, n + 1):\n        a, b = b, a + b\n    return b\n",
+        "starter_code": "def climb_stairs(n):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [3], "expected": 3},
             {"inputs": [2], "expected": 2}
@@ -530,7 +530,7 @@ PART3_DATA["data-structures-algorithmic-problem-solving"] = [
         "examples": [
             {"input": "coins = [1, 2, 5], amount = 11", "output": "3", "explanation": "5 + 5 + 1 = 11 (3 coins)."}
         ],
-        "starter_code": "def coin_change(coins, amount):\n    # Write your solution below\n    dp = [float('inf')] * (amount + 1)\n    dp[0] = 0\n    for coin in coins:\n        for x in range(coin, amount + 1):\n            dp[x] = min(dp[x], dp[x - coin] + 1)\n    return dp[amount] if dp[amount] != float('inf') else -1\n",
+        "starter_code": "def coin_change(coins, amount):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[1, 2, 5], 11], "expected": 3},
             {"inputs": [[2], 3], "expected": -1}
@@ -555,7 +555,7 @@ PART3_DATA["data-structures-algorithmic-problem-solving"] = [
         "examples": [
             {"input": "nums = [4, 5, 6, 7, 0, 1, 2], target = 0", "output": "4", "explanation": "0 is at index 4."}
         ],
-        "starter_code": "def search_rotated(nums, target):\n    # Write your solution below\n    l, r = 0, len(nums) - 1\n    while l <= r:\n        mid = (l + r) // 2\n        if nums[mid] == target:\n            return mid\n        if nums[l] <= nums[mid]:\n            if nums[l] <= target < nums[mid]:\n                r = mid - 1\n            else:\n                l = mid + 1\n        else:\n            if nums[mid] < target <= nums[r]:\n                l = mid + 1\n            else:\n                r = mid - 1\n    return -1\n",
+        "starter_code": "def search_rotated(nums, target):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[4, 5, 6, 7, 0, 1, 2], 0], "expected": 4},
             {"inputs": [[4, 5, 6, 7, 0, 1, 2], 3], "expected": -1}
@@ -580,7 +580,7 @@ PART3_DATA["data-structures-algorithmic-problem-solving"] = [
         "examples": [
             {"input": "tree = [4, 2, 7, 1, 3, 6, 9]", "output": "[4, 7, 2, 9, 6, 3, 1]", "explanation": "Subtrees swapped."}
         ],
-        "starter_code": "def invert_tree_levels(tree):\n    # Write your solution below\n    if len(tree) != 7:\n        return tree\n    r, l, rt, ll, lr, rl, rr = tree\n    return [r, rt, l, rr, rl, lr, ll]\n",
+        "starter_code": "def invert_tree_levels(tree):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[4, 2, 7, 1, 3, 6, 9]], "expected": [4, 7, 2, 9, 6, 3, 1]}
         ],
@@ -675,7 +675,7 @@ PART3_DATA["modern-react-javascript-es6-proficiency"] = [
         "examples": [
             {"input": "items = [{id: 1, role: 'dev'}, {id: 2, role: 'dev'}], key = 'role'", "output": "{dev: [{id: 1, role: 'dev'}, {id: 2, role: 'dev'}]}", "explanation": "Grouped under 'dev'."}
         ],
-        "starter_code": "function groupBy(items, key) {\n    // Write your solution below\n    return items.reduce((acc, item) => {\n        const val = item[key];\n        if (!acc[val]) acc[val] = [];\n        acc[val].push(item);\n        return acc;\n    }, {});\n}\n",
+        "starter_code": "function groupBy(items, key) {\n    // Write your solution below\n},
         "sample_test_cases": [
             {"inputs": [[{"id": 1, "role": "dev"}, {"id": 2, "role": "qa"}], "role"], "expected": {"dev": [{"id": 1, "role": "dev"}], "qa": [{"id": 2, "role": "qa"}]}}
         ],
@@ -698,7 +698,7 @@ PART3_DATA["modern-react-javascript-es6-proficiency"] = [
         "examples": [
             {"input": "query = '?user=adil&tab=projects'", "output": "{'user': 'adil', 'tab': 'projects'}", "explanation": "Pairs split by &."}
         ],
-        "starter_code": "function parseQuery(query) {\n    // Write your solution below\n    const q = query.startsWith('?') ? query.slice(1) : query;\n    if (!q) return {};\n    const result = {};\n    q.split('&').forEach(pair => {\n        const [k, v] = pair.split('=');\n        if (k) result[k] = v || '';\n    });\n    return result;\n}\n",
+        "starter_code": "function parseQuery(query) {\n    // Write your solution below\n},
         "sample_test_cases": [
             {"inputs": ["?user=adil&tab=projects"], "expected": {"user": "adil", "tab": "projects"}},
             {"inputs": [""], "expected": {}}
@@ -723,7 +723,7 @@ PART3_DATA["modern-react-javascript-es6-proficiency"] = [
         "examples": [
             {"input": "curriedAdd(3, 4)", "output": "7", "explanation": "3 + 4 = 7"}
         ],
-        "starter_code": "function curriedAdd(a, b) {\n    // Write your solution below\n    if (b !== undefined) return a + b;\n    return function(nextB) {\n        return a + nextB;\n    };\n}\n",
+        "starter_code": "function curriedAdd(a, b) {\n    // Write your solution below\n},
         "sample_test_cases": [
             {"inputs": [3, 4], "expected": 7},
             {"inputs": [10, -5], "expected": 5}
@@ -747,7 +747,7 @@ PART3_DATA["modern-react-javascript-es6-proficiency"] = [
         "examples": [
             {"input": "arr = [1, 2, 2, 3, 1, 4]", "output": "[1, 2, 3, 4]", "explanation": "First occurrences kept."}
         ],
-        "starter_code": "function unique(arr) {\n    // Write your solution below\n    return Array.from(new Set(arr));\n}\n",
+        "starter_code": "function unique(arr) {\n    // Write your solution below\n},
         "sample_test_cases": [
             {"inputs": [[1, 2, 2, 3, 1, 4]], "expected": [1, 2, 3, 4]},
             {"inputs": [["a", "b", "a"]], "expected": ["a", "b"]}
@@ -771,7 +771,7 @@ PART3_DATA["modern-react-javascript-es6-proficiency"] = [
         "examples": [
             {"input": "calls = [100, 150, 400], delay = 100", "output": "[250, 500]", "explanation": "100 overridden by 150 -> fires at 250. 400 fires at 500."}
         ],
-        "starter_code": "function simulateDebounce(calls, delay) {\n    // Write your solution below\n    if (!calls.length) return [];\n    const fires = [];\n    for (let i = 0; i < calls.length; i++) {\n        const isLastOrSpaced = (i === calls.length - 1) || (calls[i + 1] - calls[i] > delay);\n        if (isLastOrSpaced) {\n            fires.push(calls[i] + delay);\n        }\n    }\n    return fires;\n}\n",
+        "starter_code": "function simulateDebounce(calls, delay) {\n    // Write your solution below\n},
         "sample_test_cases": [
             {"inputs": [[100, 150, 400], 100], "expected": [250, 500]}
         ],
@@ -867,7 +867,7 @@ PART3_DATA["java-core-object-oriented-architecture"] = [
         "examples": [
             {"input": "ops = [['push', -2], ['push', 0], ['push', -3], ['getMin'], ['pop'], ['top'], ['getMin']]", "output": "[-3, 0, -2]", "explanation": "Min tracking stack."}
         ],
-        "starter_code": "def min_stack_simulation(operations):\n    # Write your solution below\n    stack = []\n    min_stack = []\n    res = []\n    for op in operations:\n        cmd = op[0]\n        if cmd == 'push':\n            val = op[1]\n            stack.append(val)\n            if not min_stack or val <= min_stack[-1]:\n                min_stack.append(val)\n        elif cmd == 'pop':\n            if stack:\n                popped = stack.pop()\n                if min_stack and popped == min_stack[-1]:\n                    min_stack.pop()\n        elif cmd == 'top':\n            res.append(stack[-1] if stack else None)\n        elif cmd == 'getMin':\n            res.append(min_stack[-1] if min_stack else None)\n    return res\n",
+        "starter_code": "def min_stack_simulation(operations):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [[["push", -2], ["push", 0], ["push", -3], ["getMin"], ["pop"], ["top"], ["getMin"]]], "expected": [-3, 0, -2]}
         ],
@@ -890,7 +890,7 @@ PART3_DATA["java-core-object-oriented-architecture"] = [
             {"input": "s = 'aabcccccaaa'", "output": "'a2b1c5a3'", "explanation": "Length 8 < 11."},
             {"input": "s = 'abcdef'", "output": "'abcdef'", "explanation": "Compressed 'a1b1c1d1e1f1' (12) is not smaller than 6."}
         ],
-        "starter_code": "def compress_string(s):\n    # Write your solution below\n    if not s:\n        return s\n    res = []\n    curr = s[0]\n    cnt = 1\n    for c in s[1:]:\n        if c == curr:\n            cnt += 1\n        else:\n            res.append(curr + str(cnt))\n            curr = c\n            cnt = 1\n    res.append(curr + str(cnt))\n    compressed = ''.join(res)\n    return compressed if len(compressed) < len(s) else s\n",
+        "starter_code": "def compress_string(s):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": ["aabcccccaaa"], "expected": "a2b1c5a3"},
             {"inputs": ["abcdef"], "expected": "abcdef"}
@@ -936,7 +936,7 @@ PART3_DATA["java-core-object-oriented-architecture"] = [
         "examples": [
             {"input": "code = 'public void test() { int[] a = new int[2]; }'", "output": "True", "explanation": "All brackets matched."}
         ],
-        "starter_code": "def validate_syntax(code_str):\n    # Write your solution below\n    stack = []\n    matching = {')': '(', '}': '{', ']': '['}\n    opening = set(matching.values())\n    for c in code_str:\n        if c in opening:\n            stack.append(c)\n        elif c in matching:\n            if not stack or stack.pop() != matching[c]:\n                return False\n    return len(stack) == 0\n",
+        "starter_code": "def validate_syntax(code_str):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": ["public void test() { int[] a = new int[2]; }"], "expected": True},
             {"inputs": ["class Test { void m() { }"], "expected": False}
@@ -960,7 +960,7 @@ PART3_DATA["java-core-object-oriented-architecture"] = [
         "examples": [
             {"input": "bal = 100, tx = [{'type': 'CREDIT', 'amount': 50}]", "output": "150", "explanation": "100 + 50 = 150."}
         ],
-        "starter_code": "def calculate_ledger(initial_balance, transactions):\n    # Write your solution below\n    bal = initial_balance\n    for tx in transactions:\n        t = tx.get('type')\n        amt = tx.get('amount', 0)\n        if t == 'CREDIT':\n            bal += amt\n        elif t == 'DEBIT':\n            bal -= amt\n    return bal\n",
+        "starter_code": "def calculate_ledger(initial_balance, transactions):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": [100, [{"type": "CREDIT", "amount": 50}, {"type": "DEBIT", "amount": 20}]], "expected": 130}
         ],
@@ -1055,7 +1055,7 @@ PART3_DATA["html5-modern-css3-responsive-design"] = [
         "examples": [
             {"input": "hex = '#ffffff'", "output": "'rgb(255, 255, 255)'", "explanation": "ff = 255."}
         ],
-        "starter_code": "function hexToRgb(hex) {\n    // Write your solution below\n    const clean = hex.startsWith('#') ? hex.slice(1) : hex;\n    const r = parseInt(clean.slice(0, 2), 16);\n    const g = parseInt(clean.slice(2, 4), 16);\n    const b = parseInt(clean.slice(4, 6), 16);\n    return `rgb(${r}, ${g}, ${b})`;\n}\n",
+        "starter_code": "function hexToRgb(hex) {\n    // Write your solution below\n},
         "sample_test_cases": [
             {"inputs": ["#ffffff"], "expected": "rgb(255, 255, 255)"},
             {"inputs": ["#000000"], "expected": "rgb(0, 0, 0)"}
@@ -1080,7 +1080,7 @@ PART3_DATA["html5-modern-css3-responsive-design"] = [
         "examples": [
             {"input": "str = 'primaryButton'", "output": "'primary-button'", "explanation": "B separated by hyphen and lowercased."}
         ],
-        "starter_code": "function toKebabCase(str) {\n    // Write your solution below\n    return str\n        .replace(/([a-z])([A-Z])/g, '$1-$2')\n        .toLowerCase();\n}\n",
+        "starter_code": "function toKebabCase(str) {\n    // Write your solution below\n},
         "sample_test_cases": [
             {"inputs": ["primaryButton"], "expected": "primary-button"},
             {"inputs": ["navBarItem"], "expected": "nav-bar-item"}
@@ -1104,7 +1104,7 @@ PART3_DATA["html5-modern-css3-responsive-design"] = [
         "examples": [
             {"input": "style = 'color: blue;'", "output": "{'color': 'blue'}", "explanation": "Parsed declaration."}
         ],
-        "starter_code": "function parseInlineStyle(styleStr) {\n    // Write your solution below\n    const res = {};\n    styleStr.split(';').forEach(decl => {\n        const parts = decl.split(':');\n        if (parts.length >= 2) {\n            const prop = parts[0].trim();\n            const val = parts.slice(1).join(':').trim();\n            if (prop && val) res[prop] = val;\n        }\n    });\n    return res;\n}\n",
+        "starter_code": "function parseInlineStyle(styleStr) {\n    // Write your solution below\n},
         "sample_test_cases": [
             {"inputs": ["color: red; font-size: 14px;"], "expected": {"color": "red", "font-size": "14px"}}
         ],
@@ -1126,7 +1126,7 @@ PART3_DATA["html5-modern-css3-responsive-design"] = [
         "examples": [
             {"input": "totalPages = 4, currentPage = 2", "output": "[1, 2, 3, 4]", "explanation": "All 4 pages displayed."}
         ],
-        "starter_code": "function generatePagination(totalPages, currentPage) {\n    // Write your solution below\n    if (totalPages <= 5) {\n        const arr = [];\n        for (let i = 1; i <= totalPages; i++) arr.push(i);\n        return arr;\n    }\n    return [1, 2, 3, 4, 5];\n}\n",
+        "starter_code": "function generatePagination(totalPages, currentPage) {\n    // Write your solution below\n},
         "sample_test_cases": [
             {"inputs": [4, 2], "expected": [1, 2, 3, 4]}
         ],
@@ -1149,7 +1149,7 @@ PART3_DATA["html5-modern-css3-responsive-design"] = [
             {"input": "selector = '#nav'", "output": "[1, 0, 0]", "explanation": "ID selector."},
             {"input": "selector = '.btn'", "output": "[0, 1, 0]", "explanation": "Class selector."}
         ],
-        "starter_code": "function getSpecificity(selector) {\n    // Write your solution below\n    if (selector.startsWith('#')) return [1, 0, 0];\n    if (selector.startsWith('.')) return [0, 1, 0];\n    return [0, 0, 1];\n}\n",
+        "starter_code": "function getSpecificity(selector) {\n    // Write your solution below\n},
         "sample_test_cases": [
             {"inputs": ["#nav"], "expected": [1, 0, 0]},
             {"inputs": [".btn"], "expected": [0, 1, 0]}
@@ -1247,7 +1247,7 @@ PART3_DATA["cybersecurity-owasp-top-10-fundamentals"] = [
         "examples": [
             {"input": "pass = 'Secure#2026'", "output": "True", "explanation": "Meets all criteria."}
         ],
-        "starter_code": "def validate_password(password):\n    # Write your solution below\n    if len(password) < 8:\n        return False\n    has_upper = any(c.isupper() for c in password)\n    has_lower = any(c.islower() for c in password)\n    has_digit = any(c.isdigit() for c in password)\n    specials = set('!@#$%^&*')\n    has_special = any(c in specials for c in password)\n    return has_upper and has_lower and has_digit and has_special\n",
+        "starter_code": "def validate_password(password):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": ["Secure#2026"], "expected": True},
             {"inputs": ["weakpassword"], "expected": False}
@@ -1296,7 +1296,7 @@ PART3_DATA["cybersecurity-owasp-top-10-fundamentals"] = [
         "examples": [
             {"input": "payload = \"admin' OR 1=1--\"", "output": "True", "explanation": "Contains OR 1=1 and comment."}
         ],
-        "starter_code": "def detect_sqli(payload):\n    # Write your solution below\n    p = payload.upper()\n    signatures = ['--', ';', '/*', ' OR 1=1', ' UNION SELECT']\n    return any(sig in p for sig in signatures)\n",
+        "starter_code": "def detect_sqli(payload):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": ["admin' OR 1=1--"], "expected": True},
             {"inputs": ["john.doe@example.com"], "expected": False}
@@ -1320,7 +1320,7 @@ PART3_DATA["cybersecurity-owasp-top-10-fundamentals"] = [
         "examples": [
             {"input": "val_a = 'secret_token', val_b = 'secret_token'", "output": "True", "explanation": "Identical strings."}
         ],
-        "starter_code": "def constant_time_compare(val_a, val_b):\n    # Write your solution below\n    if len(val_a) != len(val_b):\n        return False\n    result = 0\n    for x, y in zip(val_a, val_b):\n        result |= ord(x) ^ ord(y)\n    return result == 0\n",
+        "starter_code": "def constant_time_compare(val_a, val_b):\n    # Write your solution below\n    pass\n",
         "sample_test_cases": [
             {"inputs": ["secret_token", "secret_token"], "expected": True},
             {"inputs": ["secret_token", "wrong_token"], "expected": False}
@@ -1356,3 +1356,4 @@ PART3_DATA["cybersecurity-owasp-top-10-fundamentals"] = [
         "explanation": "Validate 3 parts matching base64url characters."
     }
 ]
+

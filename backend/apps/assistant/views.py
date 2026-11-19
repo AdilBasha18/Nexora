@@ -95,6 +95,17 @@ class ChatConversationDetailView(views.APIView):
         except ChatConversation.DoesNotExist:
             return Response({"error": "Conversation not found."}, status=status.HTTP_404_NOT_FOUND)
 
+    def patch(self, request, pk):
+        try:
+            conv = ChatConversation.objects.get(pk=pk, user=request.user)
+            title = request.data.get('title', '').strip()
+            if title:
+                conv.title = title[:255]
+                conv.save(update_fields=['title', 'updated_at'])
+            return Response(ChatConversationSerializer(conv).data)
+        except ChatConversation.DoesNotExist:
+            return Response({"error": "Conversation not found."}, status=status.HTTP_404_NOT_FOUND)
+
     def delete(self, request, pk):
         try:
             conv = ChatConversation.objects.get(pk=pk, user=request.user)

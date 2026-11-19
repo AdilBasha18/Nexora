@@ -7,7 +7,7 @@ class TargetRole(models.Model):
     slug = models.SlugField(max_length=200, unique=True, blank=True)
     description = models.TextField()
     market_demand = models.CharField(max_length=50, default='High')
-    average_salary = models.CharField(max_length=100, default='$85,000 - $130,000')
+    average_salary = models.CharField(max_length=100, default='₹8,00,000 - ₹16,00,000 per annum')
     required_skills = models.JSONField(default=list)
     preferred_skills = models.JSONField(default=list, blank=True)
 

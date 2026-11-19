@@ -15,12 +15,12 @@ from accounts.permissions import IsCandidate
 class AssessmentCategoryListView(generics.ListAPIView):
     queryset = AssessmentCategory.objects.all().order_by('name')
     serializer_class = AssessmentCategorySerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     pagination_class = None
 
 class AssessmentListView(generics.ListAPIView):
     serializer_class = AssessmentListSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     pagination_class = None
 
     def get_queryset(self):
@@ -33,7 +33,7 @@ class AssessmentListView(generics.ListAPIView):
 class AssessmentDetailView(generics.RetrieveAPIView):
     queryset = Assessment.objects.filter(is_active=True)
     serializer_class = AssessmentListSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'id'
 
 class AssessmentTakeView(views.APIView):
@@ -49,7 +49,10 @@ class AssessmentTakeView(views.APIView):
 class AssessmentRunCodeView(views.APIView):
     """
     Live Code Execution Endpoint:
-    Executes candidate code in an isolated sandbox (Python, JavaScript, SQL) against test cases.
+    Executes candidate code in an isolated sandbox (Python, JavaScript, SQL).
+    - action='run': runs against visible sample test cases only. Does not complete question.
+    - action='submit': evaluates against full test suite (sample + hidden), masks hidden tests,
+      and marks question completed if criteria met.
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -57,28 +60,59 @@ class AssessmentRunCodeView(views.APIView):
         user_code = request.data.get('code', '')
         question_id = request.data.get('question_id')
         test_cases = request.data.get('test_cases', [])
-        function_name = request.data.get('function_name', 'solution')
-        language = request.data.get('language', 'python')
+        req_lang = request.data.get('language')
+        action = request.data.get('action', 'run')
 
+        question = None
         if question_id:
             try:
                 question = Question.objects.get(id=question_id)
-                # Use sample_test_cases if available, fallback to full test_cases
-                test_cases = question.sample_test_cases or question.test_cases or test_cases
-                function_name = question.function_name or function_name
-                language = question.language or language
             except Question.DoesNotExist:
                 pass
+
+        language = (req_lang or (question.language if question else None) or 'python').lower().strip()
+        if language == 'java':
+            function_name = (question.function_name_java if question and question.function_name_java else None) or (question.function_name if question else None) or request.data.get('function_name') or 'solution'
+        else:
+            function_name = (question.function_name if question else None) or request.data.get('function_name') or 'solution'
 
         if not user_code or not user_code.strip():
             return Response({"error": "No code provided to execute."}, status=status.HTTP_400_BAD_REQUEST)
 
-        execution_result = execute_code(
-            language=language,
-            user_code=user_code,
-            test_cases=test_cases,
-            function_name=function_name
-        )
+        if action == 'submit':
+            eval_tests = (question.test_cases if question else None) or test_cases or (question.sample_test_cases if question else None) or []
+            execution_result = execute_code(
+                language=language,
+                user_code=user_code,
+                test_cases=eval_tests,
+                function_name=function_name
+            )
+            sample_count = len(question.sample_test_cases) if question and question.sample_test_cases else 0
+            sanitized_tests = []
+            for idx, t in enumerate(execution_result.get('tests', [])):
+                if idx < sample_count:
+                    sanitized_tests.append(t)
+                else:
+                    sanitized_tests.append({
+                        "input": f"Hidden test case #{idx + 1}",
+                        "expected": "[Hidden]",
+                        "actual": "[Hidden]" if t.get('passed') else (t.get('error') or "Failed"),
+                        "passed": t.get('passed', False),
+                        "hidden": True
+                    })
+            execution_result['tests'] = sanitized_tests
+            execution_result['action'] = 'submit'
+            execution_result['completed'] = execution_result.get('all_passed', False)
+        else:
+            sample_tests = (question.sample_test_cases if question else None) or test_cases or []
+            execution_result = execute_code(
+                language=language,
+                user_code=user_code,
+                test_cases=sample_tests,
+                function_name=function_name
+            )
+            execution_result['action'] = 'run'
+            execution_result['completed'] = False
 
         return Response(execution_result, status=status.HTTP_200_OK)
 
@@ -127,17 +161,29 @@ class AssessmentSubmitView(views.APIView):
             q_id_str = str(q.id)
             if q.question_type == Question.QuestionType.CODE:
                 # Real code execution against evaluation test cases
-                user_code = code_answers.get(q_id_str, '').strip()
+                user_entry = code_answers.get(q_id_str, '')
+                if isinstance(user_entry, dict):
+                    user_code = user_entry.get('code', '').strip()
+                    user_lang = (user_entry.get('language') or q.language or 'python').lower().strip()
+                else:
+                    user_code = str(user_entry).strip()
+                    user_lang = (q.language or 'python').lower().strip()
+
+                if user_lang == 'java':
+                    fn_name = (q.function_name_java or q.function_name or 'solution')
+                else:
+                    fn_name = (q.function_name or 'solution')
+
                 test_res = {}
                 is_correct = False
                 eval_tests = q.test_cases or q.sample_test_cases or []
 
                 if user_code and eval_tests:
                     test_res = execute_code(
-                        language=q.language or 'python',
+                        language=user_lang,
                         user_code=user_code,
                         test_cases=eval_tests,
-                        function_name=q.function_name or 'solution'
+                        function_name=fn_name
                     )
                     is_correct = test_res.get('all_passed', False)
 

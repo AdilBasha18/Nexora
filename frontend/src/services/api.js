@@ -29,6 +29,13 @@ export async function apiRequest(endpoint, options = {}) {
     }
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
+      if (response.status === 401 && !endpoint.includes('/auth/login/')) {
+        localStorage.removeItem('nexora_token');
+        localStorage.removeItem('nexora_user');
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+          window.location.href = '/login?expired=true';
+        }
+      }
       throw { status: response.status, data };
     }
     return data;
@@ -44,6 +51,9 @@ export const api = {
   registerRecruiter: (data) => apiRequest('/auth/register/recruiter/', { method: 'POST', body: JSON.stringify(data) }),
   getMe: () => apiRequest('/auth/me/'),
   changePassword: (data) => apiRequest('/auth/change-password/', { method: 'POST', body: JSON.stringify(data) }),
+  googleOAuth: (credential) => apiRequest('/auth/google/', { method: 'POST', body: JSON.stringify({ credential }) }),
+  githubOAuth: (code) => apiRequest('/auth/github/', { method: 'POST', body: JSON.stringify({ code }) }),
+  logout: () => apiRequest('/auth/logout/', { method: 'POST' }),
 
   // Candidates
   getProfile: () => apiRequest('/candidates/profile/'),
@@ -63,6 +73,8 @@ export const api = {
     isFormData 
   }),
   improveResume: (payload) => apiRequest('/ats/improve/', { method: 'POST', body: JSON.stringify(payload) }),
+  reEvaluateRevisedResume: (payload) => apiRequest('/ats/re-evaluate/', { method: 'POST', body: JSON.stringify(payload) }),
+  saveImprovedToResumes: (payload) => apiRequest('/ats/save-to-resumes/', { method: 'POST', body: JSON.stringify(payload) }),
   downloadImprovedResume: async (payload) => {
     const token = localStorage.getItem('nexora_token');
     const res = await fetch('/api/v1/ats/download-improved/', {
@@ -121,6 +133,7 @@ export const api = {
   getTargetRoles: () => apiRequest('/career/roles/'),
   getCareerResources: (category = '') => apiRequest(`/career/resources/${category ? `?category=${category}` : ''}`),
   getJobReadiness: (roleId = '') => apiRequest(`/career/readiness/${roleId ? `?role_id=${roleId}` : ''}`),
+  setTargetRole: (roleId) => apiRequest('/career/readiness/', { method: 'POST', body: JSON.stringify({ target_role_id: roleId }) }),
   getRoadmap: (roleId = '') => apiRequest(`/career/roadmap/${roleId ? `?role_id=${roleId}` : ''}`),
   generateRoadmap: (data) => apiRequest('/career/roadmap/', { method: 'POST', body: JSON.stringify(data) }),
   toggleRoadmapStep: (stepId) => apiRequest(`/career/roadmap/steps/${stepId}/toggle/`, { method: 'PATCH' }),
@@ -129,12 +142,16 @@ export const api = {
   askAssistant: (data) => apiRequest('/assistant/chat/', { method: 'POST', body: JSON.stringify(data) }),
   getConversations: () => apiRequest('/assistant/conversations/'),
   getConversationDetail: (id) => apiRequest(`/assistant/conversations/${id}/`),
+  renameConversation: (id, title) => apiRequest(`/assistant/conversations/${id}/`, { method: 'PATCH', body: JSON.stringify({ title }) }),
+  deleteConversation: (id) => apiRequest(`/assistant/conversations/${id}/`, { method: 'DELETE' }),
   clearConversations: () => apiRequest('/assistant/conversations/', { method: 'DELETE' }),
 
   // Notifications
+  // Notifications & Support
   getNotifications: () => apiRequest('/notifications/'),
   markNotificationRead: (id) => apiRequest(`/notifications/${id}/read/`, { method: 'PATCH' }),
   markAllNotificationsRead: () => apiRequest('/notifications/mark-all-read/', { method: 'POST' }),
+  submitSupportTicket: (data) => apiRequest('/notifications/support/', { method: 'POST', body: JSON.stringify(data) }),
 
   // Moderation & Scam Shield
   reportJob: (data) => apiRequest('/moderation/reports/', { method: 'POST', body: JSON.stringify(data) }),
@@ -142,7 +159,31 @@ export const api = {
   resolveReport: (id, data) => apiRequest(`/moderation/reports/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
   getAdminVerifications: () => apiRequest('/moderation/verifications/'),
   actOnVerification: (id, data) => apiRequest(`/moderation/verifications/${id}/action/`, { method: 'POST', body: JSON.stringify(data) }),
+  getAdminRecruiters: (status = '', search = '') => {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (search) params.append('search', search);
+    const q = params.toString();
+    return apiRequest(`/moderation/recruiters/${q ? `?${q}` : ''}`);
+  },
+  actOnRecruiter: (id, data) => apiRequest(`/moderation/recruiters/${id}/action/`, { method: 'POST', body: JSON.stringify(data) }),
+  getAdminJobs: (status = '', search = '') => {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (search) params.append('search', search);
+    const q = params.toString();
+    return apiRequest(`/moderation/jobs/${q ? `?${q}` : ''}`);
+  },
   actOnJob: (id, data) => apiRequest(`/moderation/jobs/${id}/action/`, { method: 'POST', body: JSON.stringify(data) }),
+  getAdminUsers: (role = '', status = '', search = '') => {
+    const params = new URLSearchParams();
+    if (role) params.append('role', role);
+    if (status) params.append('status', status);
+    if (search) params.append('search', search);
+    const q = params.toString();
+    return apiRequest(`/moderation/users/${q ? `?${q}` : ''}`);
+  },
+  actOnUser: (id, data) => apiRequest(`/moderation/users/${id}/action/`, { method: 'POST', body: JSON.stringify(data) }),
   getAdminStats: () => apiRequest('/moderation/stats/'),
   getAuditLogs: () => apiRequest('/moderation/audit-logs/'),
 };

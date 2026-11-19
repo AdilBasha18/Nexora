@@ -25,7 +25,7 @@ class CandidateProfile(models.Model):
     profile_photo_url = models.TextField(blank=True, default='')
 
     # Career Preferences
-    target_role = models.CharField(max_length=150, blank=True, default='Software Engineer')
+    target_role = models.CharField(max_length=150, blank=True, default='')
     preferred_work_mode = models.CharField(max_length=20, choices=WorkMode.choices, default=WorkMode.ANY)
     preferred_employment_type = models.CharField(max_length=50, blank=True, default='Full-time')
     preferred_locations = models.JSONField(default=list, blank=True)
