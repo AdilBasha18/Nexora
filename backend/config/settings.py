@@ -22,11 +22,19 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'nexora-secret-key-for-local-development-20
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-allowed_hosts_env = os.getenv('ALLOWED_HOSTS', '*' if DEBUG else 'localhost,127.0.0.1')
-ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(',') if h.strip()]
+allowed_hosts_env = os.getenv('ALLOWED_HOSTS', '*')
+if '*' in allowed_hosts_env or not allowed_hosts_env:
+    ALLOWED_HOSTS = ['*']
+else:
+    ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(',') if h.strip()]
+    if '.onrender.com' not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append('.onrender.com')
+
 CSRF_TRUSTED_ORIGINS = [
     'https://*.ngrok-free.app',
     'https://*.ngrok.io',
+    'https://*.onrender.com',
+    'https://*.vercel.app',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
 ]
