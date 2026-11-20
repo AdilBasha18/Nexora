@@ -32,10 +32,10 @@ class Command(BaseCommand):
             }
         )
         if created:
-            admin_user.set_password('NexoraAdmin2026!')
+            admin_user.set_password(os.environ.get('SEED_ADMIN_PASSWORD', 'ChangeMe@Admin1'))
             admin_user.save()
             Token.objects.get_or_create(user=admin_user)
-            self.stdout.write(self.style.SUCCESS("Created Admin: admin@nexora.io / NexoraAdmin2026!"))
+            self.stdout.write(self.style.SUCCESS("Created Admin: admin@nexora.io"))
 
         # 2. Companies
         company_data = [
@@ -93,7 +93,7 @@ class Command(BaseCommand):
             }
         )
         if created:
-            recruiter_user.set_password('Recruiter2026!')
+            recruiter_user.set_password(os.environ.get('SEED_RECRUITER_PASSWORD', 'ChangeMe@Recruiter1'))
             recruiter_user.save()
             Token.objects.get_or_create(user=recruiter_user)
             RecruiterProfile.objects.create(
@@ -101,7 +101,7 @@ class Command(BaseCommand):
                 company=companies['CloudNova Technologies'],
                 job_title='Principal Technical Recruiter'
             )
-            self.stdout.write(self.style.SUCCESS("Created Verified Recruiter: recruiter@cloudnova.io / Recruiter2026!"))
+            self.stdout.write(self.style.SUCCESS("Created Verified Recruiter: recruiter@cloudnova.io"))
 
         # Recruiter 2 (Unverified pending review)
         unverified_recruiter, created = User.objects.get_or_create(
@@ -142,7 +142,7 @@ class Command(BaseCommand):
             }
         )
         if created:
-            cand1.set_password('Candidate2026!')
+            cand1.set_password(os.environ.get('SEED_CANDIDATE_PASSWORD', 'ChangeMe@Candidate1'))
             cand1.save()
             Token.objects.get_or_create(user=cand1)
             CandidateProfile.objects.create(
@@ -178,7 +178,7 @@ class Command(BaseCommand):
                 github_url='https://github.com/alexmorgan-dev',
                 linkedin_url='https://linkedin.com/in/alexmorgan-dev'
             )
-            self.stdout.write(self.style.SUCCESS("Created Demo Candidate: alex.morgan@example.com / Candidate2026!"))
+            self.stdout.write(self.style.SUCCESS("Created Demo Candidate: alex.morgan@example.com"))
 
         # 5. Realistic Job Postings
         jobs_seed = [
